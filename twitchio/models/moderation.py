@@ -381,6 +381,9 @@ class BlockedTerm:
         self.updated_at: datetime.datetime = parse_timestamp(data["updated_at"])
         self.expires_at: datetime.datetime | None = parse_timestamp(data["expires_at"]) if data["expires_at"] else None
 
+    def __repr__(self) -> str:
+        return f"<BlockedTerm id={self.id} broadcaster={self.broadcaster} moderator={self.moderator} text={self.text} created_at={self.created_at}"
+
 
 class ShieldModeStatus:
     """Represents a shield mode status..
@@ -389,20 +392,24 @@ class ShieldModeStatus:
     ----------
     active: bool
         Whether Shield Mode is active. Is true if Shield Mode is active;
-    moderator: PartialUser
-        The moderator that last activated Shield Mode.
-    last_activated_at: datetime.datetime
-        When Shield Mode was last activated.
+    moderator: PartialUser | None
+        The moderator that last activated Shield Mode. Is ``None`` if existing Shield Mode setting is the same as updated setting.
+    last_activated_at: datetime.datetime | None
+        When Shield Mode was last activated. Is ``None`` if existing Shield Mode setting is the same as updated setting.
     """
 
     __slots__ = ("active", "last_activated_at", "moderator")
 
     def __init__(self, data: ShieldModeStatusResponseData, *, http: HTTPClient) -> None:
         self.active: bool = bool(data["is_active"])
-        self.moderator: PartialUser = PartialUser(
-            data["moderator_id"], data["moderator_login"], data["moderator_name"], http=http
+        self.moderator: PartialUser | None = (
+            PartialUser(data["moderator_id"], data["moderator_login"], data["moderator_name"], http=http)
+            if data["moderator_id"]
+            else None
         )
-        self.last_activated_at: datetime.datetime = parse_timestamp(data["last_activated_at"])
+        self.last_activated_at: datetime.datetime | None = (
+            parse_timestamp(data["last_activated_at"]) if data["last_activated_at"] else None
+        )
 
     def __repr__(self) -> str:
         return (
