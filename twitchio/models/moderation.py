@@ -381,6 +381,9 @@ class BlockedTerm:
         self.updated_at: datetime.datetime = parse_timestamp(data["updated_at"])
         self.expires_at: datetime.datetime | None = parse_timestamp(data["expires_at"]) if data["expires_at"] else None
 
+    def __repr__(self) -> str:
+        return f"<BlockedTerm id={self.id} broadcaster={self.broadcaster} moderator={self.moderator} text={self.text} created_at={self.created_at}"
+
 
 class ShieldModeStatus:
     """Represents a shield mode status..
