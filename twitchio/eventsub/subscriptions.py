@@ -2567,7 +2567,7 @@ class CustomPowerupRedeemAddSubscription(SubscriptionPayload):
     """
 
     type: ClassVar[Literal["channel.custom_power_up_redemption.add"]] = "channel.custom_power_up_redemption.add"
-    version: ClassVar[Literal["beta"]] = "beta"
+    version: ClassVar[Literal["1"]] = "1"
 
     @handle_user_ids()
     def __init__(self, **condition: Unpack[Condition]) -> None:
