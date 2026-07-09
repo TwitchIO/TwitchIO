@@ -31,7 +31,6 @@ from .exceptions import HTTPException, MessageRejectedError
 from .models.ads import AdSchedule, CommercialStart, SnoozeAd
 from .models.raids import Raid
 from .utils import MISSING, Colour, parse_timestamp
-from .utils import MISSING, Colour, parse_timestamp
 
 
 if TYPE_CHECKING:
