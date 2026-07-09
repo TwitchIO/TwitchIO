@@ -52,6 +52,8 @@ __all__ = (
     "ConduitPayload",
     "ContentClassificationLabelData",
     "ContentClassificationLabelsResponse",
+    "CustomPowerupResponseData",
+    "CustomPowerupResponseImage",
     "EventsubSubscriptionResponse",
     "EventsubSubscriptionResponseData",
     "ExtensionAnalyticsResponse",
@@ -112,6 +114,27 @@ class _TokenResponseBase(TypedDict):
 
 RefreshTokenResponse: TypeAlias = _TokenResponseBase
 UserTokenResponse: TypeAlias = _TokenResponseBase
+
+
+class _MaxPerStreamSetting(TypedDict):
+    is_enabled: bool
+    max_per_stream: int
+
+
+class _MaxPerUserPerStreamSetting(TypedDict):
+    is_enabled: bool
+    max_per_user_per_stream: int
+
+
+class _GlobalCooldownSetting(TypedDict):
+    is_enabled: bool
+    global_cooldown_seconds: int
+
+
+class _ImageUrlSizes(TypedDict):
+    url_1x: str
+    url_2x: str
+    url_4x: str
 
 
 class ValidateTokenResponse(TypedDict):
@@ -349,31 +372,51 @@ class ChannelFollowersResponse(TypedDict):
     total: int
 
 
-class CustomRewardsResponseImage(TypedDict):
-    url_1x: str
-    url_2x: str
-    url_4x: str
+class CustomPowerupResponseImage(_ImageUrlSizes): ...
 
 
-class CustomRewardsResponseDefaultImage(TypedDict):
-    url_1x: str
-    url_2x: str
-    url_4x: str
+class CustomPowerupResponseDefaultImage(_ImageUrlSizes): ...
 
 
-class CustomRewardsResponseMaxPerStreamSetting(TypedDict):
+class CustomPowerupResponseData(TypedDict):
+    broadcaster_id: str
+    broadcaster_login: str
+    broadcaster_name: str
+    id: str
+    title: str
+    prompt: str
+    bits: int
+    image: CustomPowerupResponseImage
+    default_image: CustomPowerupResponseDefaultImage
+    background_color: str
     is_enabled: bool
-    max_per_stream: int
+    is_user_input_required: bool
+    max_per_stream_setting: _MaxPerStreamSetting
+    max_per_user_stream_setting: _MaxPerUserPerStreamSetting
+    global_cooldown_setting: _GlobalCooldownSetting
+    is_paused: bool
+    is_in_stock: bool
+    redemptions_redeemed_current_stream: int | None
+    cooldown_expires_at: str | None
 
 
-class CustomRewardsResponseMaxPerUserPerStreamSetting(TypedDict):
-    is_enabled: bool
-    max_per_user_per_stream: int
+class CustomPowerupResponse(TypedDict):
+    data: list[CustomPowerupResponseData]
 
 
-class CustomRewardsResponseGlobalCooldownSetting(TypedDict):
-    is_enabled: bool
-    global_cooldown_seconds: int
+class CustomRewardsResponseImage(_ImageUrlSizes): ...
+
+
+class CustomRewardsResponseDefaultImage(_ImageUrlSizes): ...
+
+
+class CustomRewardsResponseMaxPerStreamSetting(_MaxPerStreamSetting): ...
+
+
+class CustomRewardsResponseMaxPerUserPerStreamSetting(_MaxPerUserPerStreamSetting): ...
+
+
+class CustomRewardsResponseGlobalCooldownSetting(_GlobalCooldownSetting): ...
 
 
 class CustomRewardsResponseData(TypedDict):
@@ -489,10 +532,7 @@ class ChattersResponse(TypedDict):
     total: int
 
 
-class ChannelEmotesResponseImages(TypedDict):
-    url_1x: str
-    url_2x: str
-    url_4x: str
+class ChannelEmotesResponseImages(_ImageUrlSizes): ...
 
 
 class ChannelEmotesResponseData(TypedDict):
@@ -512,10 +552,7 @@ class ChannelEmotesResponse(TypedDict):
     template: str
 
 
-class GlobalEmotesResponseImages(TypedDict):
-    url_1x: str
-    url_2x: str
-    url_4x: str
+class GlobalEmotesResponseImages(_ImageUrlSizes): ...
 
 
 class GlobalEmotesResponseData(TypedDict):
@@ -532,10 +569,7 @@ class GlobalEmotesResponse(TypedDict):
     template: str
 
 
-class EmoteSetsResponseImages(TypedDict):
-    url_1x: str
-    url_2x: str
-    url_4x: str
+class EmoteSetsResponseImages(_ImageUrlSizes): ...
 
 
 class EmoteSetsResponseData(TypedDict):
