@@ -309,6 +309,11 @@
 .. autoclass:: twitchio.Warning
     :members:
 
+.. attributetable:: twitchio.PinnedMessage
+
+.. autoclass:: twitchio.PinnedMessage
+    :members:
+
 .. attributetable:: twitchio.Poll
 
 .. autoclass:: twitchio.Poll

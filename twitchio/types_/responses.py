@@ -25,6 +25,7 @@ SOFTWARE.
 from typing import Any, Generic, Literal, NotRequired, TypeAlias, TypedDict, TypeVar
 
 from .conduits import Condition, ConduitData, ShardData
+from .eventsub import ChatMessageData
 
 
 __all__ = (
@@ -75,6 +76,8 @@ __all__ = (
     "HypeTrainStatusResponseData",
     "HypeTrainStatusTopContributions",
     "OAuthResponses",
+    "PinnedChatMessageData",
+    "PinnedChatMessageResponse",
     "RawResponse",
     "RefreshTokenResponse",
     "SearchChannelsResponseData",
@@ -1377,6 +1380,25 @@ class UpdateShieldModeStatusResponse(TypedDict):
 
 class ShieldModeStatusResponse(TypedDict):
     data: list[ShieldModeStatusResponseData]
+
+
+class PinnedChatMessageData(TypedDict):
+    message_id: str
+    broadcaster_id: str
+    sender_user_id: str
+    sender_user_login: str
+    sender_user_name: str
+    pinned_by_user_id: str
+    pinned_by_user_login: str
+    pinned_by_user_name: str
+    message: ChatMessageData
+    starts_at: str
+    ends_at: str
+    updated_at: str
+
+
+class PinnedChatMessageResponse(TypedDict):
+    data: list[PinnedChatMessageData]
 
 
 class PollsResponseChoices(TypedDict):
