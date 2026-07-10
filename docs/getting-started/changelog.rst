@@ -17,24 +17,66 @@ Changelog
         - Added - :class:`~twitchio.DeviceCodeRejection`
         - Added - :attr:`~twitchio.ChatNotification.watch_streak` and :attr:`~twitchio.ChatNotification.source_only` to :class:`~twitchio.ChatNotification` event.
         - Added - ``conduit_id`` parameter to :func:`twitchio.Client.fetch_eventsub_subscriptions`
+        - Added - :class:`~twitchio.PinnedMessage` model.
+        - Added - :meth:`~twitchio.PartialUser.fetch_pinned_message`, :meth:`~twitchio.PartialUser.pin_message`, :meth:`~twitchio.PartialUser.update_pin_message`, and :meth:`~twitchio.PartialUser.unpin_message` to :class:`~twitchio.PartialUser`.
+        - Added - :meth:`~twitchio.ChatMessage.pin`, :meth:`~twitchio.ChatMessage.update_pin`, and :meth:`~twitchio.ChatMessage.unpin` to :class:`~twitchio.ChatMessage`.
+        - Added - :meth:`~twitchio.PinnedMessage.update_pin` and :meth:`~twitchio.PinnedMessage.unpin` to :class:`~twitchio.PinnedMessage`.
+        - Added - ``pin`` parameter to :meth:`~twitchio.PartialUser.send_message`.
+        - Added - :class:`~twitchio.CustomPowerup`, :class:`~twitchio.PowerupCooldown`, and :class:`~twitchio.PowerupLimitSettings` models.
+        - Added - :meth:`~twitchio.PartialUser.fetch_custom_powerups` to :class:`~twitchio.PartialUser`.
     
     - Changes
         - Some of the internal token management has been adjusted to support applications using DCF.
+        - Starlette adapter updated to >=1.0.0
+        - The following Helix (API) methods now allow using an App Token by providing ``token_for=None``
+            - :meth:`~twitchio.PartialUser.start_commercial`
+            - :meth:`~twitchio.PartialUser.fetch_ad_schedule`
+            - :meth:`~twitchio.PartialUser.snooze_next_ad`
+            - :meth:`~twitchio.PartialUser.fetch_chatters`
+            - :meth:`~twitchio.PartialUser.update_chat_settings`
+            - :meth:`~twitchio.PartialUser.send_announcement`
+            - :meth:`~twitchio.PartialUser.send_shoutout`
+            - :meth:`~twitchio.PartialUser.check_automod_status`
+            - :meth:`~twitchio.PartialUser.approve_automod_messages`
+            - :meth:`~twitchio.PartialUser.deny_automod_messages`
+            - :meth:`~twitchio.PartialUser.fetch_automod_settings`
+            - :meth:`~twitchio.PartialUser.update_automod_settings`
+            - :meth:`~twitchio.PartialUser.fetch_banned_user`
+            - :meth:`~twitchio.PartialUser.ban_user`
+            - :meth:`~twitchio.PartialUser.unban_user`
+            - :meth:`~twitchio.PartialUser.fetch_blocked_terms`
+            - :meth:`~twitchio.PartialUser.add_blocked_term`
+            - :meth:`~twitchio.PartialUser.remove_blocked_term`
+            - :meth:`~twitchio.PartialUser.delete_chat_messages`
+            - :meth:`~twitchio.PartialUser.fetch_moderated_channels`
+            - :meth:`~twitchio.PartialUser.update_shield_mode_status`
+            - :meth:`~twitchio.PartialUser.fetch_shield_mode_status`
+            - :meth:`~twitchio.PartialUser.warn_user`
+
+- twitchio.eventsub
+    - Additions
+        - Added - :class:`~twitchio.CustomPowerupRedemptionAdd` event model.
+        - Added - :class:`~twitchio.eventsub.subscriptions.CustomPowerupRedeemAddSubscription` EventSub subscription.
+        - Added - :func:`~twitchio.Client.event_custom_power_up_redemption_add` event.
 
 - twitchio.Client
     - Additions
         - Added - :meth:`twitchio.Client.login_dcf`
         - Added - :meth:`twitchio.Client.start_dcf`
         - Added - :attr:`twitchio.Client.http`
+        - Subscription ID is now included in the error message when receiving a 409 error on event subscription.
 
     - Changes
         - The ``client_secret`` passed to :class:`~twitchio.Client` is now optional for DCF support.
         - Some methods using deprecated ``asyncio`` methods were updated to use ``inspect``.
+        - Allow commands to be invoked via a reply.
 
 - twitchio.ext.commands.Bot
     - Changes
         - The ``bot_id`` passed to :class:`~twitchio.ext.commands.Bot` is now optional for DCF support.
-
+    
+    - Bug fixes
+        - Improved typing for custom prefixes
 
 3.2.1
 ======
