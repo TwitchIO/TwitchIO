@@ -1317,19 +1317,14 @@ class ShoutoutReceiveEvent(BaseBroadcasterEvent):
     viewer_count: int
 
 
-class StreamOnlineEvent(TypedDict):
+class StreamOnlineEvent(BaseBroadcasterEvent):
     id: str
-    broadcaster_user_id: str
-    broadcaster_user_login: str
-    broadcaster_user_name: str
     type: Literal["live", "playlist", "watch_party", "premiere", "rerun"]
     started_at: str
 
 
-class StreamOfflineEvent(TypedDict):
-    broadcaster_user_id: str
-    broadcaster_user_login: str
-    broadcaster_user_name: str
+class StreamOfflineEvent(BaseBroadcasterEvent):
+    id: str
 
 
 class UserAuthorizationGrantEvent(TypedDict):

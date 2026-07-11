@@ -5555,6 +5555,8 @@ class StreamOffline(_ResponderEvent):
     ----------
     broadcaster: PartialUser
         The user whose stream is now offline.
+    id: str
+        The id of the stream.
     """
 
     subscription_type = "stream.offline"
@@ -5565,9 +5567,10 @@ class StreamOffline(_ResponderEvent):
         self.broadcaster: PartialUser = PartialUser(
             payload["broadcaster_user_id"], payload["broadcaster_user_login"], payload["broadcaster_user_name"], http=http
         )
+        self.id: str = payload["id"]
 
     def __repr__(self) -> str:
-        return f"<StreamOffline broadcaster={self.broadcaster}>"
+        return f"<StreamOffline broadcaster={self.broadcaster} id={self.id}>"
 
 
 class UserAuthorizationGrant(BaseEvent):
