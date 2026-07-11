@@ -395,9 +395,9 @@ class PartialCustomPowerup:
         The ID of the custom Power-up.
     title: str
         The title of the custom Power-up.
-    bits: int
+    bits: int | None
         The Bits cost of the custom Power-up.
-    prompt: str
+    prompt: str | None
         The prompt of the custom Power-up.
     """
 
@@ -406,8 +406,8 @@ class PartialCustomPowerup:
     def __init__(self, data: CustomPowerupData | CustomPowerupResponseData) -> None:
         self.id: str = data["id"]
         self.title: str = data["title"]
-        self.bits: int = data["bits"]
-        self.prompt: str = data["prompt"]
+        self.bits: int | None = data.get("bits")
+        self.prompt: str | None = data.get("prompt")
 
     def __repr__(self) -> str:
         return f"<PartialCustomPowerup id={self.id} title={self.title} bits={self.bits}>"
