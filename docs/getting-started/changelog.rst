@@ -78,6 +78,12 @@ Changelog
     - Bug fixes
         - Improved typing for custom prefixes
 
+3.2.2
+======
+- twitchio.eventsub
+    - Bug fixes
+        - Hype Train Events now return empty list for shared_train_participants if not shared_train.
+
 3.2.1
 ======
 - twitchio
