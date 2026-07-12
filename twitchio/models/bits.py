@@ -398,13 +398,16 @@ class PartialCustomPowerup:
         The title of the custom Power-up.
     bits: int | None
         The Bits cost of the custom Power-up.
+        This is `None` when received via Bits Use event.
     prompt: str | None
         The prompt of the custom Power-up.
+        This is `None` when received via Bits Use event.
     """
 
-    __slots__ = ("bits", "id", "prompt", "title")
+    __slots__ = ("_broadcaster", "bits", "id", "prompt", "title")
 
-    def __init__(self, data: CustomPowerupData | CustomPowerupResponseData) -> None:
+    def __init__(self, data: CustomPowerupData | CustomPowerupResponseData, *, broadcaster: PartialUser) -> None:
+        self._broadcaster = broadcaster
         self.id: str = data["id"]
         self.title: str = data["title"]
         self.bits: int | None = data.get("bits")
@@ -412,6 +415,10 @@ class PartialCustomPowerup:
 
     def __repr__(self) -> str:
         return f"<PartialCustomPowerup id={self.id} title={self.title} bits={self.bits}>"
+
+    async def fetch_custom_powerup(self) -> CustomPowerup:
+        data = await self._broadcaster.fetch_custom_powerups(ids=[self.id])
+        return data[0]
 
 
 class CustomPowerup(PartialCustomPowerup):
@@ -485,7 +492,7 @@ class CustomPowerup(PartialCustomPowerup):
         self.broadcaster = PartialUser(
             data["broadcaster_id"], data["broadcaster_login"], data["broadcaster_name"], http=http
         )
-        super().__init__(data)
+        super().__init__(data, broadcaster=self.broadcaster)
         self.default_image: dict[str, str] = {k: str(v) for k, v in data["default_image"].items()}
         self.colour: Colour = Colour.from_hex(data["background_color"])
         self.enabled: bool = data["is_enabled"]

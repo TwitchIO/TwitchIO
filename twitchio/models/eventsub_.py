@@ -908,7 +908,7 @@ class ChannelBitsUse(_ResponderEvent):
         self.power_up: PowerUp | None = PowerUp(power_up) if power_up is not None else None
         custom_power_up = payload.get("custom_power_up")
         self.custom_power_up: PartialCustomPowerup | None = (
-            PartialCustomPowerup(custom_power_up) if custom_power_up is not None else None
+            PartialCustomPowerup(custom_power_up, broadcaster=self.broadcaster) if custom_power_up is not None else None
         )
         fragments = message.get("fragments", [])
         self.fragments: list[ChatMessageFragment] = [ChatMessageFragment(f, http=http) for f in fragments]
@@ -4172,7 +4172,9 @@ class CustomPowerupRedemptionAdd(_ResponderEvent):
         self.user_input: str = payload["user_input"]
         self.status: Literal["unfulfilled", "unknown", "fulfilled", "canceled"] = payload["status"]
         self.redeemed_at: datetime.datetime = parse_timestamp(payload["redeemed_at"])
-        self.custom_powerup: PartialCustomPowerup = PartialCustomPowerup(payload["custom_power_up"])
+        self.custom_powerup: PartialCustomPowerup = PartialCustomPowerup(
+            payload["custom_power_up"], broadcaster=self.broadcaster
+        )
 
     def __repr__(self) -> str:
         return f"<CustomPowerupRedemptionAdd broadcaster={self.broadcaster} user={self.user} status={self.status} redeemed_at={self.redeemed_at}>"
