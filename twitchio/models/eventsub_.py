@@ -135,6 +135,7 @@ __all__ = (
     "ChatMessageEmote",
     "ChatMessageFragment",
     "ChatMessageReply",
+    "ChatModiversary",
     "ChatNotification",
     "ChatPayItForward",
     "ChatPrimePaidUpgrade",
@@ -1959,6 +1960,25 @@ class ChatBitsBadgeTier:
         return f"<ChatBitsBadgeTier tier={self.tier}>"
 
 
+class ChatModiversary:
+    """
+    Represents moderator's anniversary of a channel.
+
+    Attributes
+    ----------
+    months: int
+        The number of months the user has been a moderator in this channel.
+    """
+
+    __slots__ = ("months",)
+
+    def __init__(self, data: ChatModiversaryData) -> None:
+        self.months: int = int(data["months"])
+
+    def __repr__(self) -> str:
+        return f"<ChatModiversary months={self.months}>"
+
+
 class ChatCharityDonation:
     """
     Represents a charity donation.
@@ -2081,6 +2101,8 @@ class ChatNotification(_ResponderEvent):
         Information about the bits badge tier event. `None` if `notice_type` is not `bits_badge_tier`
     charity_donation: ChatCharityDonation
         Information about the announcement event. `None` if `notice_type` is not `charity_donation`
+    modiversary: ChatModiversary | None
+        Information about the modiversary event. `None` if `notice_type` is not modiversary.
     shared_sub: ChatSub | None
         Information about the shared_chat_sub event. Is `None` if `notice_type` is not `shared_chat_sub`.
         This field has the same information as the sub field but for a notice that happened for a channel in a shared chat session other than the broadcaster in the subscription condition.
@@ -2108,6 +2130,8 @@ class ChatNotification(_ResponderEvent):
     shared_announcement: ChatAnnouncement | None
         Information about the shared_chat_announcement event. Is `None` if `notice_type` is not `shared_chat_announcement`.
         This field has the same information as the announcement field but for a notice that happened for a channel in a shared chat session other than the broadcaster in the subscription condition.
+    shared_modiversary: ChatModiversary | None
+        Information about the shared_chat_modiversary event. Is `None` if `notice_type` is not `shared_chat_modiversary`. This field has the same information as the modiversary field but for a notice that happened for a channel in a shared chat session other than the broadcaster in the subscription condition.
     source_only: bool | None
         Whether the notification is only sent to the source channel. Is `None` if the notification is not in a shared chat session.
     watch_streak: WatchStreak | None
@@ -2129,20 +2153,22 @@ class ChatNotification(_ResponderEvent):
         "fragments",
         "gift_paid_upgrade",
         "id",
+        "modiversary",
         "notice_type",
         "pay_it_forward",
         "prime_paid_upgrade",
         "raid",
         "resub",
-        "shared_chat_announcement",
-        "shared_chat_community_sub_gift",
-        "shared_chat_gift_paid_upgrade",
-        "shared_chat_pay_it_forward",
-        "shared_chat_prime_paid_upgrade",
-        "shared_chat_raid",
-        "shared_chat_resub",
-        "shared_chat_sub",
-        "shared_chat_sub_gift",
+        "shared_announcement",
+        "shared_community_sub_gift",
+        "shared_gift_paid_upgrade",
+        "shared_modiversary",
+        "shared_pay_it_forward",
+        "shared_prime_paid_upgrade",
+        "shared_raid",
+        "shared_resub",
+        "shared_sub",
+        "shared_sub_gift",
         "source_only",
         "sub",
         "sub_gift",
@@ -2239,6 +2265,12 @@ class ChatNotification(_ResponderEvent):
         self.watch_streak: WatchStreak | None = (
             WatchStreak(payload["watch_streak"]) if payload["watch_streak"] is not None else None
         )
+        self.modiversary: ChatModiversary | None = (
+            ChatModiversary(payload["modiversary"]) if payload["modiversary"] is not None else None
+        )
+        self.shared_modiversary: ChatModiversary | None = (
+            ChatModiversary(payload["shared_chat_modiversary"]) if payload["shared_chat_modiversary"] is not None else None
+        )
 
         self.notice_type: Literal[
             "sub",
@@ -2252,6 +2284,7 @@ class ChatNotification(_ResponderEvent):
             "pay_it_forward",
             "announcement",
             "bits_badge_tier",
+            "modiversary",
             "charity_donation",
             "shared_chat_sub",
             "shared_chat_resub",
@@ -2262,6 +2295,8 @@ class ChatNotification(_ResponderEvent):
             "shared_chat_raid",
             "shared_chat_pay_it_forward",
             "shared_chat_announcement",
+            "shared_chat_modiversary",
+            "unknown",
             "watch_streak",
         ] = payload["notice_type"]
 

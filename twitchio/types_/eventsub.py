@@ -108,6 +108,7 @@ __all__ = (
     "ChatMessageEmoteData",
     "ChatMessageFragmentsData",
     "ChatMessageReplyData",
+    "ChatModiversaryData",
     "ChatPayItForwardData",
     "ChatPrimePaidUpgradeData",
     "ChatRaidData",
@@ -570,6 +571,10 @@ class ChatBitsBadgeTierData(TypedDict):
     tier: int
 
 
+class ChatModiversaryData(TypedDict):
+    months: int
+
+
 class ChatWatchStreakData(TypedDict):
     streak_count: int
     channel_points_awarded: int
@@ -598,6 +603,7 @@ class ChannelChatNotificationEvent(BaseBroadcasterEvent):
         "announcement",
         "bits_badge_tier",
         "charity_donation",
+        "modiversary",
         "shared_chat_sub",
         "shared_chat_resub",
         "shared_chat_sub_gift",
@@ -607,6 +613,8 @@ class ChannelChatNotificationEvent(BaseBroadcasterEvent):
         "shared_chat_raid",
         "shared_chat_pay_it_forward",
         "shared_chat_announcement",
+        "shared_chat_modiversary",
+        "unknown",
         "watch_streak",
     ]
     sub: ChatSubData | None
@@ -621,6 +629,7 @@ class ChannelChatNotificationEvent(BaseBroadcasterEvent):
     announcement: ChatAnnouncementData | None
     bits_badge_tier: ChatBitsBadgeTierData | None
     charity_donation: ChatCharityDonationData | None
+    modiversary: ChatModiversaryData | None
     shared_chat_sub: ChatSubData | None
     shared_chat_resub: ChatResubData | None
     shared_chat_sub_gift: ChatSubGiftData | None
@@ -630,6 +639,7 @@ class ChannelChatNotificationEvent(BaseBroadcasterEvent):
     shared_chat_pay_it_forward: ChatPayItForwardData | None
     shared_chat_raid: ChatRaidData | None
     shared_chat_announcement: ChatAnnouncementData | None
+    shared_chat_modiversary: ChatModiversaryData | None
     watch_streak: ChatWatchStreakData | None
     is_source_only: bool | None
 
