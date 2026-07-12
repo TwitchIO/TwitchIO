@@ -24,6 +24,7 @@ Changelog
         - Added - ``pin`` parameter to :meth:`~twitchio.PartialUser.send_message`.
         - Added - :class:`~twitchio.CustomPowerup`, :class:`~twitchio.PowerupCooldown`, and :class:`~twitchio.PowerupLimitSettings` models.
         - Added - :meth:`~twitchio.PartialUser.fetch_custom_powerups` to :class:`~twitchio.PartialUser`.
+        - Added - New types to :class:`~twitchio.Goal`. `new_bit` and `new_cheerer`.
     
     - Changes
         - Some of the internal token management has been adjusted to support applications using DCF.
@@ -59,6 +60,7 @@ Changelog
         - Added - :meth:`~twitchio.eventsub.CustomPowerupRedeemAddSubscription`.
         - Added - :func:`~twitchio.event_custom_power_up_redemption_add()` event.
         - Added - :class:`~twitchio.PartialCustomPowerup` model for bits use event.
+        - Added - `modiversary`, `shared_modiversary`, and `unknown` to :class:`~twitchio.ChatNotification`
 
 
 - twitchio.Client
