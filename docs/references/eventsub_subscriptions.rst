@@ -216,6 +216,11 @@ Eventsub Subscriptions
 .. autoclass:: ChannelPointsRedeemUpdateSubscription
     :members:
 
+.. attributetable:: CustomPowerupRedeemAddSubscription
+
+.. autoclass:: CustomPowerupRedeemAddSubscription
+    :members:
+
 .. attributetable:: ChannelPollBeginSubscription
 
 .. autoclass:: ChannelPollBeginSubscription

@@ -60,6 +60,7 @@ __all__ = (
     "ExtensionCost",
     "ExtensionProductData",
     "ExtensionTransaction",
+    "PartialCustomPowerup",
     "PowerupCooldown",
     "PowerupLimitSettings",
 )

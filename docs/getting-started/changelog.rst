@@ -28,7 +28,7 @@ Changelog
     - Changes
         - Some of the internal token management has been adjusted to support applications using DCF.
         - Starlette adapter updated to >=1.0.0
-        - The following Helix (API) methods now allow using an App Token by providing ``token_for=None``
+        - The following Helix (API) methods now allow using the default App Token by providing ``token_for=None``
             - :meth:`~twitchio.PartialUser.start_commercial`
             - :meth:`~twitchio.PartialUser.fetch_ad_schedule`
             - :meth:`~twitchio.PartialUser.snooze_next_ad`
@@ -56,8 +56,10 @@ Changelog
 - twitchio.eventsub
     - Additions
         - Added - :class:`~twitchio.CustomPowerupRedemptionAdd` event model.
-        - Added - :class:`~twitchio.eventsub.subscriptions.CustomPowerupRedeemAddSubscription` EventSub subscription.
-        - Added - :func:`~twitchio.Client.event_custom_power_up_redemption_add` event.
+        - Added - :meth:`~twitchio.eventsub.CustomPowerupRedeemAddSubscription`.
+        - Added - :func:`~twitchio.event_custom_power_up_redemption_add()` event.
+        - Added - :class:`~twitchio.PartialCustomPowerup` model for bits use event.
+
 
 - twitchio.Client
     - Additions
@@ -116,8 +118,8 @@ Changelog
 
     - Bug fixes
         - Fix :func:`~twitchio.utils.setup_logging` breaking coloured formatting on ``CRITICAL`` logging level.
-        - Fix :class:`~models.eventsub_.ChannelPointsAutoRedeemAdd` now accounts for attribute message in payload to be None.
-        - Fix :class:`~models.eventsub_.ChannelBitsUse` now accounts for attribute message in payload to be None.
+        - Fix :class:`~twitchio.models.eventsub_.ChannelPointsAutoRedeemAdd` now accounts for attribute message in payload to be None.
+        - Fix :class:`~twitchio.ChannelBitsUse` now accounts for attribute message in payload to be None.
         - Fix some typing issues with adapters in :class:`~twitchio.Client`.
         - Fixed a bug causing conduit websockets to be treated as eventsub websockets and fail after a reconnect attempt.
         - Fixed incorrect documentation in :func:`~twitchio.PartialUser.fetch_moderators`.

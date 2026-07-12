@@ -172,6 +172,10 @@ Table Reference
      - :meth:`~eventsub.ChannelPointsRedeemUpdateSubscription`
      - :func:`~twitchio.event_custom_redemption_update()`
      - :class:`~models.eventsub_.ChannelPointsRedemptionUpdate`
+   * - Channel Points Custom Reward Redemption Update
+     - :meth:`~eventsub.CustomPowerupRedeemAddSubscription`
+     - :func:`~twitchio.event_custom_power_up_redemption_add()`
+     - :class:`~models.eventsub_.CustomPowerupRedemptionAdd`
    * - Channel Poll Begin
      - :meth:`~eventsub.ChannelPollBeginSubscription`
      - :func:`~twitchio.event_poll_begin()`
@@ -873,6 +877,18 @@ Chat / Messages
   to receive this event.
 
   :param twitchio.ChannelBitsUse payload: The EventSub payload for this event.
+
+.. py:function:: event_custom_power_up_redemption_add(payload: twitchio.CustomPowerupRedemptionAdd) -> None
+  :async:
+
+  Event dispatched whenever a viewer has redeemed a custom Power-up.
+    
+  Corresponds to the Twitch EventSub subscription :es-docs:`Channel Custom Power-ups Redemption Add <channelbitsuse>`.
+    
+  You must subscribe to EventSub with :class:`~twitchio.eventsub.CustomPowerupRedeemAddSubscription` for each required user
+  to receive this event.
+
+  :param twitchio.CustomPowerupRedemptionAdd payload: The EventSub payload for this event.
 
 Goals
 #####

@@ -170,6 +170,7 @@
 
 .. autoclass:: twitchio.BaseCharityCampaign()
     :members:
+    :inherited-members:
 
 .. attributetable:: twitchio.ChatCharityDonation
 
@@ -399,6 +400,17 @@
 .. attributetable:: twitchio.ChannelPointsRedemptionUpdate
 
 .. autoclass:: twitchio.ChannelPointsRedemptionUpdate()
+    :members:
+    :inherited-members:
+
+.. attributetable:: twitchio.PartialCustomPowerup
+
+.. autoclass:: twitchio.PartialCustomPowerup
+    :members:
+
+.. attributetable:: twitchio.CustomPowerupRedemptionAdd
+
+.. autoclass:: twitchio.CustomPowerupRedemptionAdd()
     :members:
     :inherited-members:
 
