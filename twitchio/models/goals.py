@@ -54,6 +54,10 @@ class Goal:
 
     - If type is ``new_subscription_count``, this field is increased by 1 for each new subscription.
 
+    - If type is ``new_bit``, this field is increased by the number of bits used.
+
+    - If type is ``new_cheerer``, this field is increased by 1 for each new cheerer.
+
     +------------------------+-----------------------------------------------------------------------------------------------------------------------+
     | Type                   | Description                                                                                                           |
     +========================+=======================================================================================================================+
@@ -70,6 +74,10 @@ class Goal:
     | new_subscription_count | The goal is to increase subscriptions. This type shows only the net increase in the number of subscriptions (it does  |
     |                        | not account for users that unsubscribed since the goal started).                                                      |
     +------------------------+-----------------------------------------------------------------------------------------------------------------------+
+    | new_bit                | The goal is to increase the amount of Bits used on the channel.                                                       |
+    +------------------------+-----------------------------------------------------------------------------------------------------------------------+
+    | new_cheerer            | The goal is to increase the amount of unique Cheerers on to Cheer on the channel.                                     |
+    +------------------------+-----------------------------------------------------------------------------------------------------------------------+
 
     Attributes
     -----------
@@ -77,8 +85,8 @@ class Goal:
         An ID that identifies this goal.
     broadcaster: PartialUser
         The broadcaster that created the goal.
-    type: typing.Literal["follower", "subscription", "subscription_count", "new_subscription", "new_subscription_count"]
-        The type of goal. Possible values are: `follower`, `subscription`, `subscription_count`, `new_subscription`, `new_subscription_count`
+    type: typing.Literal["follower", "subscription", "subscription_count", "new_subscription", "new_subscription_count", "new_bit", "new_cheerer"]
+        The type of goal. Possible values are: `follower`, `subscription`, `subscription_count`, `new_subscription`, `new_subscription_count`, `new_bit`, `new_cheerer`
         Please refer to the documentation for more details.
     description: str
         A description of the goal. Is an empty string if not specified.
@@ -99,7 +107,13 @@ class Goal:
             data["broadcaster_id"], data["broadcaster_login"], data["broadcaster_name"], http=http
         )
         self.type: Literal[
-            "follower", "subscription", "subscription_count", "new_subscription", "new_subscription_count"
+            "follower",
+            "subscription",
+            "subscription_count",
+            "new_subscription",
+            "new_subscription_count",
+            "new_bit",
+            "new_cheerer",
         ] = data["type"]
         self.description: str = data["description"]
         self.current_amount: int = data["current_amount"]
