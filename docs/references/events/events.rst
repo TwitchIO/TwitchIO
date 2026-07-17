@@ -20,8 +20,16 @@ Table Reference
      - :meth:`~eventsub.AutomodMessageHoldSubscription`
      - :func:`~twitchio.event_automod_message_hold()`
      - :class:`~models.eventsub_.AutomodMessageHold`
+   * - Automod Message Hold V2
+     - :meth:`~eventsub.AutomodMessageHoldV2Subscription`
+     - :func:`~twitchio.event_automod_message_hold()`
+     - :class:`~models.eventsub_.AutomodMessageHold`
    * - Automod Message Update
      - :meth:`~eventsub.AutomodMessageUpdateSubscription`
+     - :func:`~twitchio.event_automod_message_update()`
+     - :class:`~models.eventsub_.AutomodMessageUpdate`
+   * - Automod Message Update V2
+     - :meth:`~eventsub.AutomodMessageUpdateV2Subscription`
      - :func:`~twitchio.event_automod_message_update()`
      - :class:`~models.eventsub_.AutomodMessageUpdate`
    * - Automod Settings Update
@@ -152,6 +160,10 @@ Table Reference
      - :meth:`~eventsub.ChannelPointsAutoRedeemSubscription`
      - :func:`~twitchio.event_automatic_redemption_add()`
      - :class:`~models.eventsub_.ChannelPointsAutoRedeemAdd`
+   * - Channel Points Automatic Reward Redemption V2
+     - :meth:`~eventsub.ChannelPointsAutoRedeemV2Subscription`
+     - :func:`~twitchio.event_automatic_redemption_add()`
+     - :class:`~models.eventsub_.ChannelPointsAutoRedeemAdd`
    * - Channel Points Custom Reward Add
      - :meth:`~eventsub.ChannelPointsRewardAddSubscription`
      - :func:`~twitchio.event_custom_reward_add()`
@@ -172,7 +184,7 @@ Table Reference
      - :meth:`~eventsub.ChannelPointsRedeemUpdateSubscription`
      - :func:`~twitchio.event_custom_redemption_update()`
      - :class:`~models.eventsub_.ChannelPointsRedemptionUpdate`
-   * - Channel Points Custom Reward Redemption Update
+   * - Channel Custom Power-ups Redemption Add
      - :meth:`~eventsub.CustomPowerupRedeemAddSubscription`
      - :func:`~twitchio.event_custom_power_up_redemption_add()`
      - :class:`~models.eventsub_.CustomPowerupRedemptionAdd`
@@ -635,9 +647,12 @@ Channel Points
 
     Event dispatched when a viewer has redeemed an automatic channel points reward on the specified channel.
     
-    Corresponds to the Twitch EventSub subscriptions :es-docs:`Channel Points Automatic Reward Redemption <channelchannel_points_automatic_reward_redemptionadd>`
+    Corresponds to the Twitch EventSub subscriptions
+    :es-docs:`Channel Points Automatic Reward Redemption <channelchannel_points_automatic_reward_redemptionadd>` and
+    :es-docs:`Channel Points Automatic Reward Redemption V2 <channelchannel_points_automatic_reward_redemptionadd-v2>`.
     
-    You must subscribe to EventSub with :class:`~twitchio.eventsub.ChannelPointsAutoRedeemSubscription`
+    You must subscribe to EventSub with :class:`~twitchio.eventsub.ChannelPointsAutoRedeemSubscription` or
+    :class:`~twitchio.eventsub.ChannelPointsAutoRedeemV2Subscription`
     for each required broadcaster to receive this event.
 
     :param twitchio.ChannelPointsAutoRedeemAdd payload: The EventSub payload received for this event.
@@ -883,7 +898,8 @@ Chat / Messages
 
   Event dispatched whenever a viewer has redeemed a custom Power-up.
     
-  Corresponds to the Twitch EventSub subscription :es-docs:`Channel Custom Power-ups Redemption Add <channelbitsuse>`.
+  Corresponds to the Twitch EventSub subscription
+  :es-docs:`Channel Custom Power-ups Redemption Add <channelcustompower-upsredemptionadd>`.
     
   You must subscribe to EventSub with :class:`~twitchio.eventsub.CustomPowerupRedeemAddSubscription` for each required user
   to receive this event.
