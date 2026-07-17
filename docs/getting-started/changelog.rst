@@ -61,6 +61,7 @@ Changelog
         - Added - :func:`~twitchio.event_custom_power_up_redemption_add()` event.
         - Added - :class:`~twitchio.PartialCustomPowerup` model for bits use event.
         - Added - `modiversary`, `shared_modiversary`, and `unknown` to :class:`~twitchio.ChatNotification`
+        - Added - :class:`~twitchio.ChatMessageGif` to accomodate :attr:`~twitchio.ChatMessageFragment.gif`
 
 
 - twitchio.Client

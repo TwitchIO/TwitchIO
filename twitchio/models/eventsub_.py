@@ -134,6 +134,7 @@ __all__ = (
     "ChatMessageDelete",
     "ChatMessageEmote",
     "ChatMessageFragment",
+    "ChatMessageGif",
     "ChatMessageReply",
     "ChatModiversary",
     "ChatNotification",
@@ -1243,6 +1244,25 @@ class ChatMessageCheermote:
         return f"<ChatMessageCheermote prefix={self.prefix} bits={self.bits} tier={self.tier}>"
 
 
+class ChatMessageGif:
+    """
+    Represents a chat message gif.
+
+    Attributes
+    ----------
+    id: str
+        An ID that uniquely identifies this GIF.
+    asset: Asset
+        Gif image, as an Asset.
+    """
+
+    __slots__ = ("asset", "id")
+
+    def __init__(self, data: ChatMessageGifData, *, http: HTTPClient) -> None:
+        self.id: str = data["gif_id"]
+        self.asset: Asset = Asset(data["url"], http=http)
+
+
 class ChatMessageFragment:
     """
     Represents a chat message's fragments.
@@ -1258,6 +1278,7 @@ class ChatMessageFragment:
         - cheermote
         - emote
         - mention
+        - gif
 
     mention: PartialUser | None
         The user that is mentioned, if one is mentioned.
@@ -1265,13 +1286,15 @@ class ChatMessageFragment:
         Cheermote data if a cheermote is sent.
     emote: ChatMessageEmote | None
         Emote data if a cheermote is sent.
+    gif: ChatMessageGifData | None
+        Gif data if a gif is sent.
     """
 
-    __slots__ = ("cheermote", "emote", "mention", "text", "type")
+    __slots__ = ("cheermote", "emote", "gif", "mention", "text", "type")
 
     def __init__(self, data: ChatMessageFragmentsData, *, http: HTTPClient) -> None:
         self.text = data["text"]
-        self.type: Literal["text", "cheermote", "emote", "mention"] = data["type"]
+        self.type: Literal["text", "cheermote", "emote", "mention", "gif"] = data["type"]
         user = data.get("mention")
         self.mention: PartialUser | None = (
             PartialUser(user["user_id"], user["user_login"], user["user_name"], http=http) if user is not None else None
@@ -1280,6 +1303,8 @@ class ChatMessageFragment:
         self.cheermote: ChatMessageCheermote | None = ChatMessageCheermote(cheermote) if cheermote is not None else None
         emote = data.get("emote")
         self.emote: ChatMessageEmote | None = ChatMessageEmote(emote, http=http) if emote else None
+        gif: ChatMessageGifData | None = data.get("gif")
+        self.gif: Asset | None = Asset(gif["url"], http=http) if gif else None
 
     def __repr__(self) -> str:
         return f"<ChatMessageFragment type={self.type} text={self.text}>"

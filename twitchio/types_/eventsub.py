@@ -115,6 +115,7 @@ __all__ = (
     "ChatResubData",
     "ChatSubData",
     "ChatSubGiftData",
+    "ChatMessageGifData",
     "ChatUserMessageHoldEvent",
     "ChatUserMessageUpdateEvent",
     "ChatWatchStreakData",
@@ -410,12 +411,18 @@ class ChatMessageCheermoteData(TypedDict):
     tier: int
 
 
+class ChatMessageGifData(TypedDict):
+    gif_id: str
+    url: str
+
+
 class ChatMessageFragmentsData(TypedDict):
     text: str
-    type: Literal["text", "cheermote", "emote", "mention"]
+    type: Literal["text", "cheermote", "emote", "mention", "gif"]
     cheermote: ChatMessageCheermoteData | None
     emote: ChatMessageEmoteData | None
     mention: NotRequired[ChatMessageMention | None]
+    gif: NotRequired[ChatMessageGifData | None]
 
 
 class ChatMessageReplyData(TypedDict):
