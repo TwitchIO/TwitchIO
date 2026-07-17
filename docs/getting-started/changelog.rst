@@ -15,11 +15,8 @@ Changelog
         - Added - :func:`~twitchio.PartialUser.remove_suspicious_chat_user` to :class:`~twitchio.PartialUser`.
         - Added - :exc:`~twitchio.DeviceCodeFlowException`
         - Added - :class:`~twitchio.DeviceCodeRejection`
-        - Added - :attr:`~twitchio.ChatNotification.watch_streak` and :attr:`~twitchio.ChatNotification.source_only` to :class:`~twitchio.ChatNotification` event.
-        - Added - ``conduit_id`` parameter to :func:`twitchio.Client.fetch_eventsub_subscriptions`
         - Added - :class:`~twitchio.PinnedMessage` model.
         - Added - :meth:`~twitchio.PartialUser.fetch_pinned_message`, :meth:`~twitchio.PartialUser.pin_message`, :meth:`~twitchio.PartialUser.update_pin_message`, and :meth:`~twitchio.PartialUser.unpin_message` to :class:`~twitchio.PartialUser`.
-        - Added - :meth:`~twitchio.ChatMessage.pin`, :meth:`~twitchio.ChatMessage.update_pin`, and :meth:`~twitchio.ChatMessage.unpin` to :class:`~twitchio.ChatMessage`.
         - Added - :meth:`~twitchio.PinnedMessage.update_pin` and :meth:`~twitchio.PinnedMessage.unpin` to :class:`~twitchio.PinnedMessage`.
         - Added - ``pin`` parameter to :meth:`~twitchio.PartialUser.send_message`.
         - Added - :class:`~twitchio.CustomPowerup`, :class:`~twitchio.PowerupCooldown`, and :class:`~twitchio.PowerupLimitSettings` models.
@@ -62,6 +59,8 @@ Changelog
         - Added - :class:`~twitchio.PartialCustomPowerup` model for bits use event.
         - Added - `modiversary`, `shared_modiversary`, and `unknown` to :class:`~twitchio.ChatNotification`
         - Added - :class:`~twitchio.ChatMessageGif` to accomodate :attr:`~twitchio.ChatMessageFragment.gif`
+        - Added - :attr:`~twitchio.ChatNotification.watch_streak` and :attr:`~twitchio.ChatNotification.source_only` to :class:`~twitchio.ChatNotification` event.
+        - Added - :meth:`~twitchio.ChatMessage.pin`, :meth:`~twitchio.ChatMessage.update_pin`, and :meth:`~twitchio.ChatMessage.unpin` to :class:`~twitchio.ChatMessage`.
 
 
 - twitchio.Client
@@ -69,6 +68,7 @@ Changelog
         - Added - :meth:`twitchio.Client.login_dcf`
         - Added - :meth:`twitchio.Client.start_dcf`
         - Added - :attr:`twitchio.Client.http`
+        - Added - ``conduit_id`` parameter to :func:`twitchio.Client.fetch_eventsub_subscriptions`
         - Subscription ID is now included in the error message when receiving a 409 error on event subscription.
 
     - Changes
