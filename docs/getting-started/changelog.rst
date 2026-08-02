@@ -6,7 +6,7 @@
 Changelog
 ##########
 
-3.3.0b
+3.3.0
 =======
 - twitchio
     - Additions
@@ -50,6 +50,10 @@ Changelog
             - :meth:`~twitchio.PartialUser.update_shield_mode_status`
             - :meth:`~twitchio.PartialUser.fetch_shield_mode_status`
             - :meth:`~twitchio.PartialUser.warn_user`
+
+    - Bug fixes
+        - Added missing attribute :attr:`~twitchio.SearchChannel.game_name`.
+        - Fix typo preventing :func:`~twitchio.PartialUser.fetch_stream` filtering by game ids.
 
 - twitchio.eventsub
     - Additions
