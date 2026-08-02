@@ -226,3 +226,6 @@ test*.py
 # So we don't accidentally commit tokens while testing...
 .tio.tokens.json
 TOKENS.py
+
+# We don't currently use UV in 3.X
+uv.lock
