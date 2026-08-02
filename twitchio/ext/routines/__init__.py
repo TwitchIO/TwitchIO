@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import inspect
 import logging
 from collections.abc import Callable, Coroutine
 from typing import Any, TypeAlias, TypeVar
@@ -356,14 +357,14 @@ class Routine:
             else:
                 self.stop()
 
-    def before_routine(self, func: CoroT) -> None:
+    def before_routine(self, func: CoroT) -> CoroT:
         """|deco|
 
         Decorator used to set a coroutine to run before the :class:`~Routine` has started.
 
         Any arguments passed to :meth:`.start` will also be passed to this coroutine callback.
         """
-        if not asyncio.iscoroutinefunction(func):
+        if not inspect.iscoroutinefunction(func):
             raise TypeError(f'"before_routine" for {self!r} expected a coroutine function not {type(func).__name__!r}')
 
         if self._before_routine is not None:
@@ -372,14 +373,14 @@ class Routine:
         self._before_routine = func
         return func
 
-    def after_routine(self, func: CoroT) -> None:
+    def after_routine(self, func: CoroT) -> CoroT:
         """|deco|
 
         Decorator used to set a coroutine to run after the :class:`~Routine` has been stopped, canceled or completed.
 
         Any arguments passed to :meth:`.start` will also be passed to this coroutine callback.
         """
-        if not asyncio.iscoroutinefunction(func):
+        if not inspect.iscoroutinefunction(func):
             raise TypeError(f'"after_routine" for {self!r} expected a coroutine function not {type(func).__name__!r}')
 
         if self._after_routine is not None:
@@ -403,12 +404,12 @@ class Routine:
         msg = "Ignoring Exception in Routine %s: %s\n"
         LOGGER.error(msg, self.__repr__(), error, exc_info=error)
 
-    def error(self, func: CoroT) -> None:
+    def error(self, func: CoroT) -> CoroT:
         """|deco|
 
         Decorator used to set a coroutine as an error handler for this :class:`~Routine`.
         """
-        if not asyncio.iscoroutinefunction(func):
+        if not inspect.iscoroutinefunction(func):
             raise TypeError(f'"error" for {self!r} expected a coroutine function not {type(func).__name__!r}')
 
         self._on_error = func
@@ -567,7 +568,7 @@ def routine(
     def wrapper(func: CoroT) -> Routine:
         nonlocal time
 
-        if not asyncio.iscoroutinefunction(func):
+        if not inspect.iscoroutinefunction(func):
             raise TypeError(f"Routine expected coroutine function not {type(func).__name__!r}")
 
         if not time and not delta:
