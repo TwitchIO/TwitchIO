@@ -289,7 +289,8 @@ class _ResponderEvent(BaseEvent):
 
         .. important::
 
-            The ``token_for`` parameter cannot be used with some payloads that require an App Access Token only.
+            The ``token_for`` parameter cannot be used with some payloads that require an App Access Token. It is preferred
+            that this parameter is only used in niche cases that require it.
 
 
         .. versionadded:: 3.1
@@ -301,11 +302,9 @@ class _ResponderEvent(BaseEvent):
             parameter will be stripped of all leading and trailing whitespace.
         me: bool
             An optional bool indicating whether you would like to send this message with the ``/me`` chat command.
-        token_for: str | PartialUser
-            The user ID (or PartialUser) used to select a managed user token for this request.
-            If None, the default app token is used.
-            You can use an App Access Token which additionally requires user:bot scope from chatting user auth scopes,
-            and either channel:bot scope from broadcaster or moderator status
+        token_for: Optional[str | PartialUser]
+            An optional user ID (or PartialUser) used to select a managed user token for this request.
+            If omitted, the default app token is used. Omitting this parameter is preferred.
 
         Returns
         -------
