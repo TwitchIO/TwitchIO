@@ -271,7 +271,7 @@ class _ResponderEvent(BaseEvent):
     broadcaster: PartialUser
     _http: HTTPClient
 
-    async def respond(self, content: str, *, me: bool = False) -> SentMessage:
+    async def respond(self, content: str, *, me: bool = False, token_for: str | PartialUser = MISSING) -> SentMessage:
         """|coro|
 
         Helper method to respond by sending a message to the broadcasters channel this event originates from, as the bot.
@@ -287,6 +287,11 @@ class _ResponderEvent(BaseEvent):
             then additionally requires the ``user:bot`` scope on the bot,
             and either ``channel:bot`` scope from the broadcaster or moderator status.
 
+        .. important::
+
+            The ``token_for`` parameter cannot be used with some payloads that require an App Access Token only.
+
+
         .. versionadded:: 3.1
 
         Parameters
@@ -296,6 +301,11 @@ class _ResponderEvent(BaseEvent):
             parameter will be stripped of all leading and trailing whitespace.
         me: bool
             An optional bool indicating whether you would like to send this message with the ``/me`` chat command.
+        token_for: str | PartialUser
+            The user ID (or PartialUser) used to select a managed user token for this request.
+            If None, the default app token is used.
+            You can use an App Access Token which additionally requires user:bot scope from chatting user auth scopes,
+            and either channel:bot scope from broadcaster or moderator status
 
         Returns
         -------
@@ -321,7 +331,8 @@ class _ResponderEvent(BaseEvent):
             raise RuntimeError(f"You must provide 'bot_id' to {client!r} to use this method.")
 
         new = (f"/me {content}" if me else content).strip()
-        return await self.broadcaster.send_message(sender=bot_id, message=new)
+        token_ = token_for if token_for is not MISSING else None
+        return await self.broadcaster.send_message(sender=bot_id, message=new, token_for=token_)
 
 
 def create_event_instance(
@@ -1501,6 +1512,9 @@ class ChatMessage(BaseChatMessage):
     def color(self) -> Colour | None:
         """An alias for colour"""
         return self.colour
+
+    async def respond(self, content: str, *, me: bool = False, token_for: str | PartialUser = MISSING) -> SentMessage:
+        return await super().respond(content, me=me, token_for=token_for)
 
     async def delete(self, moderator: str | PartialUser) -> None:
         """|coro|

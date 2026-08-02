@@ -65,6 +65,7 @@ Changelog
         - Added - :class:`~twitchio.ChatMessageGif` to accomodate :attr:`~twitchio.ChatMessageFragment.gif`
         - Added - :attr:`~twitchio.ChatNotification.watch_streak` and :attr:`~twitchio.ChatNotification.source_only` to :class:`~twitchio.ChatNotification` event.
         - Added - :meth:`~twitchio.ChatMessage.pin`, :meth:`~twitchio.ChatMessage.update_pin`, and :meth:`~twitchio.ChatMessage.unpin` to :class:`~twitchio.ChatMessage`.
+        - Added - ``token_for`` parameter to all event payloads that support the ``.respond`` method.
 
 
 - twitchio.Client
