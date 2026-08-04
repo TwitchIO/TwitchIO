@@ -6,6 +6,12 @@
 Changelog
 ##########
 
+3.3.1
+=======
+- twitchio
+    - Bug fixes
+        - Fixed pin endpoints to send parameters as query params instead of in the JSON body.
+
 3.3.0
 =======
 - twitchio
