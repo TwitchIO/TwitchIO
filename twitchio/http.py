@@ -1328,9 +1328,9 @@ class HTTPClient:
         moderator_id: str | int | PartialUser,
         token_for: str | PartialUser | None,
     ) -> PinnedChatMessageResponse:
-        data = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id}
+        params = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id}
 
-        route: Route = Route("GET", "chat/pins", json=data, token_for=token_for)
+        route: Route = Route("GET", "chat/pins", params=params, token_for=token_for)
         return await self.request_json(route)
 
     @handle_user_ids()
@@ -1342,12 +1342,12 @@ class HTTPClient:
         token_for: str | PartialUser | None,
         duration: int | None = None,
     ) -> None:
-        data = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id, "message_id": message_id}
+        params = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id, "message_id": message_id}
 
         if duration is not None:
-            data["duration"] = duration
+            params["duration"] = duration
 
-        route: Route = Route("PUT", "chat/pins", json=data, token_for=token_for)
+        route: Route = Route("PUT", "chat/pins", params=params, token_for=token_for)
         return await self.request_json(route)
 
     @handle_user_ids()
@@ -1359,12 +1359,12 @@ class HTTPClient:
         token_for: str | PartialUser | None,
         duration: int | None = None,
     ) -> None:
-        data = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id, "message_id": message_id}
+        params = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id, "message_id": message_id}
 
         if duration is not None:
-            data["duration"] = duration
+            params["duration"] = duration
 
-        route: Route = Route("PATCH", "chat/pins", json=data, token_for=token_for)
+        route: Route = Route("PATCH", "chat/pins", params=params, token_for=token_for)
         return await self.request_json(route)
 
     @handle_user_ids()
@@ -1375,9 +1375,9 @@ class HTTPClient:
         message_id: str,
         token_for: str | PartialUser | None,
     ) -> None:
-        data = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id, "message_id": message_id}
+        params = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id, "message_id": message_id}
 
-        route: Route = Route("DELETE", "chat/pins", json=data, token_for=token_for)
+        route: Route = Route("DELETE", "chat/pins", params=params, token_for=token_for)
         return await self.request_json(route)
 
     ### Clips ###
