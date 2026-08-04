@@ -1345,7 +1345,7 @@ class HTTPClient:
         params = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id, "message_id": message_id}
 
         if duration is not None:
-            params["duration"] = duration
+            params["duration_seconds"] = duration
 
         route: Route = Route("PUT", "chat/pins", params=params, token_for=token_for)
         return await self.request_json(route)
@@ -1362,7 +1362,7 @@ class HTTPClient:
         params = {"broadcaster_id": broadcaster_id, "moderator_id": moderator_id, "message_id": message_id}
 
         if duration is not None:
-            params["duration"] = duration
+            params["duration_seconds"] = duration
 
         route: Route = Route("PATCH", "chat/pins", params=params, token_for=token_for)
         return await self.request_json(route)
