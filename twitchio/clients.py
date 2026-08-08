@@ -39,7 +39,7 @@ class Client:
     def __init__(self, **options: Unpack[ClientOptionsT]) -> None:
         self._http = HTTPClient()
         self._events = EventDispatcher()
-        self._sockets = WebsocketManager(http=self._http)
+        self._sockets = WebsocketManager(self)
 
         self.__stop_event = asyncio.Event()
         self._closed: bool = False
