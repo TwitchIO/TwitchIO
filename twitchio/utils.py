@@ -21,6 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -38,6 +39,9 @@ try:
     JSON_LOADS: Any = orjson.loads  # type: ignore
 except ImportError:
     JSON_LOADS: Any = json.loads  # type: ignore
+
+
+PY_314: bool = sys.version_info >= (3, 14)
 
 
 class _MissingSentinel:
@@ -213,3 +217,11 @@ def setup_logging(
     handler.setFormatter(formatter)
     logger.setLevel(level)
     logger.addHandler(handler)  # type: ignore
+
+
+def has_eager() -> bool:
+    if PY_314:
+        return True
+
+    loop = asyncio._get_running_loop()
+    return loop is not None and loop.get_task_factory() == asyncio.eager_task_factory
