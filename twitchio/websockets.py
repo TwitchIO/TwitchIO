@@ -24,25 +24,27 @@ SOFTWARE.
 from __future__ import annotations
 
 import asyncio
-import datetime
+import dataclasses
 import logging
-import sys
-import threading
 import time
-from collections import deque
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, ClassVar, TypedDict, no_type_check
+from typing import TYPE_CHECKING, Any, Self, cast
 
-from picows import WSCloseCode, WSFrame, WSListener, WSMsgType, WSTransport, ws_connect  # type: ignore
+from picows import (
+    WSCloseCode,
+    WSFrame,
+    WSListener,
+    WSMsgType,
+    WSTransport,
+    ws_connect,  # type: ignore
+)
 
-from .backoff import Backoff
+from .exceptions import WebsocketException
 from .utils import JSON_LOADS, MISSING
 
 
 if TYPE_CHECKING:
-    from .http import HTTPClient
-    from .types_.eventsub import (
-        KeepAliveMessage,
+    from twitchio.types_.eventsub import (
         MessageTypes,
         MetaData,
         NotificationMessage,
@@ -51,318 +53,268 @@ if TYPE_CHECKING:
         WelcomeMessage,
     )
 
+    from .clients import Client
 
-__all__ = ("FrameListener", "Websocket", "WebsocketManager", "WebsocketWatcher")
+
+__all__ = ("WebsocketManager",)
 
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
-PY_314: bool = sys.version_info >= (3, 14)
+
 WSS_URL: str = "wss://eventsub.wss.twitch.tv/ws"
+MIN_KEEP_ALIVE: int = 10
+MAX_KEEP_ALIVE: int = 600
+
+FAIL_CODES: tuple[int | WSCloseCode, ...] = (
+    WSCloseCode.PROTOCOL_ERROR,
+    WSCloseCode.POLICY_VIOLATION,
+    4001,
+    4002,
+    4003,
+)
+SOFT_FAIL_CODES: tuple[WSCloseCode, ...] = (
+    WSCloseCode.NO_INFO,
+    WSCloseCode.MESSAGE_TOO_BIG,
+    WSCloseCode.INTERNAL_ERROR,
+    WSCloseCode.SERVICE_RESTART,
+    WSCloseCode.TRY_AGAIN_LATER,
+)
 
 
-class Thing(TypedDict):
-    notfication: NotificationMessage
-    session_keepalive: KeepAliveMessage
-    session_reconnect: ReconnectMessage
-    session_welcome: WelcomeMessage
-    revocation: RevocationMessage
+@dataclasses.dataclass(slots=True)
+class WSContainer:
+    transport: WSTransport | None
+    listener: WebsocketFrame | None
+    manager: WebsocketManager
 
 
 class WebsocketManager:
-    def __init__(self, http: HTTPClient, *, max_retries: int | None = None) -> None:
-        self._http = http
-        self._max_retries = max_retries
-        self._sockets: dict[str | int, Websocket] = {}
+    def __init__(self, client: Client, /, *, keepalive_timeout: float = MIN_KEEP_ALIVE) -> None:
+        self._client = client
+        self._sockets: dict[str, Websocket] = {}
+        self._tasks: set[asyncio.Task[None]] = set()
+        self._keepalive = min(max(keepalive_timeout, MIN_KEEP_ALIVE), MAX_KEEP_ALIVE)
 
     @property
-    def sockets(self) -> MappingProxyType[str | int, Websocket]:
+    def sockets(self) -> MappingProxyType[str, Websocket]:
         return MappingProxyType(self._sockets)
 
-    def get_socket(self) -> WebsocketWatcher: ...
+    def get_socket(self, session_id: str, /) -> Websocket | None:
+        return self._sockets.get(session_id)
 
-    async def reconnect_socket(self, socket: Websocket) -> ...:
-        # TODO: Handle subscriptions...
-        shard_id = socket.shard_id
-        socket._watcher.stop()
-        await socket.close()
+    async def _handle_reconnect(self, socket: Websocket, *, error: Exception | None) -> None:
+        assert socket.transport and socket.listener
+        listener = socket.listener
 
-        if not socket._can_reconnect:
-            self._sockets.pop(str(socket._shard_id or socket.session_id), None)
+        code = listener._close_code
+        reason = listener._close_reason
+
+        if code is None:
+            LOGGER.warning("%r received an unknown close code (%s: %d). Attempting to reconnect...", socket, error, code)
+            await self.reconnect_socket(socket)
             return
 
-        backoff = Backoff()
-        tries = 0
+        if code in FAIL_CODES:
+            LOGGER.error("%r was disconnected forcefully by Twitch. Cannot reconnect: %s (%d).", socket, reason, code)
+            await self.close_socket(socket)
+            return
 
-        while self._max_retries is None or tries < self._max_retries:
-            try:
-                await self.open_socket(shard_id=shard_id)
-            except Exception as e:
-                LOGGER.debug("An error occurred reconnecting %r. %s", socket, e)
-            else:
-                LOGGER.info("%r was successfully reconnected.", socket)
-                break
+        LOGGER.info("%r was disconnected (%d). Attempting to reconnect...", socket, code)
+        await self.reconnect_socket(socket=socket, soft=code in SOFT_FAIL_CODES)
 
-            tries += 1
-            delay = backoff.calculate()
+    async def reconnect_socket(self, socket: Websocket, *, soft: bool = False) -> ...: ...
 
-            await asyncio.sleep(delay)
-
-    async def open_socket(self, *, shard_id: int | None = None) -> ...:
-        watcher = WebsocketWatcher(self)
-        ws = Websocket(watcher, shard_id=shard_id)
-        watcher._socket = ws
-
-        await ws.connect()
-        await ws.wait_for_welcome()
-        watcher.start()
-
-        self._sockets[str(shard_id or ws.session_id)] = ws
+    async def open_socket(self) -> ...: ...
 
     async def batch_open(self) -> ...: ...
 
-    async def close_socket(self) -> ...: ...
+    async def close_socket(self, socket: Websocket) -> ...: ...
 
     async def batch_close(self) -> ...: ...
 
     async def shutdown(self) -> ...: ...
 
+    async def _dispatch_notification(self, socket: Websocket, *, data: NotificationMessage) -> ...: ...
 
-class WebsocketWatcher(threading.Thread):
-    _socket: Websocket
-    DAEMON: ClassVar[bool] = True
-    MIN_KEEP_ALIVE: ClassVar[int] = 10
+    async def _dispatch_session_reconnect(self, socket: Websocket, *, data: ReconnectMessage, received_at: float) -> ...: ...
 
-    BEHIND_MSG: ClassVar[str] = "%r can't keep up. Average %.1fs behind in the past %d RTT rounds."
-    BLOCK_MSG: ClassVar[str] = "%r has been blocked for %.1fs. Consider checking your application for synchronous blocking."
-    FAILED_MSG: ClassVar[str] = "%r is not responding. Attempting to recover connection."
+    async def _dispatch_session_welcome(self, socket: Websocket, *, data: WelcomeMessage, received_at: float) -> ...:
+        socket._session_id = data["payload"]["session"]["id"]
+        socket.set_ready()
 
-    def __init__(self, manager: WebsocketManager) -> None:
-        super().__init__(daemon=self.DAEMON)
+    async def _dispatch_revocation(self, socket: Websocket, *, data: RevocationMessage, received_at: float) -> ...: ...
 
-        self._manager = manager
-        self._interval: int = 3
-        self._last_update: int = time.perf_counter_ns()
-        self._should_stop = threading.Event()
-        self._last_log: datetime.datetime | None = None
-        self._recent_rtt: deque[float] = deque(maxlen=5)
+    def _wrap_notification(self, socket: Websocket, *, message: NotificationMessage) -> None:
+        task = asyncio.create_task(self._dispatch_notification(socket, data=message))
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
 
-    def __repr__(self) -> str: ...
+    async def _socket_channel(self, socket: Websocket) -> None:
+        messages = socket._messages
 
-    def run(self) -> None:
-        keep_alive = self._socket._keep_alive + 0.1
+        while True:
+            data: tuple[float, Any] = await messages.get()
 
-        while not self._should_stop.wait(self._interval):
-            dist = (time.perf_counter_ns() - self._last_update) / 1e9
-
-            if dist > keep_alive:
-                self.notify(self.FAILED_MSG, self._socket, force=True)
-                self.reconnect_socket()
+            try:
+                received, message = data
+                metadata: MetaData = message["metadata"]
+                message_type: MessageTypes = metadata["message_type"]
+            except Exception as e:
+                LOGGER.error("Unknown exception processing message in %r: %s. Data: %s", socket, e, data, exc_info=e)
                 continue
 
-            if self._recent_rtt:
-                avg_rtt = sum(self._recent_rtt) / len(self._recent_rtt)
-                if avg_rtt > 3:
-                    self.notify(self.BEHIND_MSG, self._socket, avg_rtt, len(self._recent_rtt))
+            if message_type == "session_keepalive":
+                LOGGER.debug("Received 'session_keepalive' on %r: %s", socket, data)
+                continue
 
-            total = 0
-            while True:
-                if total > keep_alive:
-                    self.notify(self.FAILED_MSG, self._socket, force=True)
-                    self.reconnect_socket()
-                    break
+            elif message_type == "notification":
+                self._wrap_notification(socket, message=message)
+                continue
 
-                elif total > 0:
-                    self.notify(self.BLOCK_MSG, self._socket, total)
+            coro = getattr(self, f"_dispatch_{message_type}", None)
+            if not coro:
+                LOGGER.warning("Unknown message type received for %r: %s", socket, data)
+                continue
 
-                try:
-                    future = asyncio.run_coroutine_threadsafe(self._socket.poll(), self._socket._loop)
-                    result = future.result(self._interval)
-                    self._recent_rtt.append(result)
-                    break
-                except TimeoutError:
-                    total += self._interval
-                    continue
-                except asyncio.CancelledError:
-                    # TODO
-                    continue
-                except Exception:
-                    self.stop()
-                    break
-
-    def reconnect_socket(self) -> None:
-        asyncio.run_coroutine_threadsafe(self._manager.reconnect_socket(self._socket), self._socket._loop)
-        self.stop()
-
-    def stop(self) -> None:
-        self._should_stop.set()
-
-    def update(self) -> None:
-        now = time.perf_counter_ns()
-        self._last_ack = now
-        self._last_update = now
-
-    def notify(self, msg: str, /, *args: Any, **kwargs: Any) -> None:
-        now = datetime.datetime.now()
-
-        level = kwargs.get("level", logging.WARNING)
-        force = kwargs.get("force", False)
-
-        if not force and self._last_log is not None and self._last_log >= (now - datetime.timedelta(seconds=5)):
-            return
-
-        self._last_log = now
-        LOGGER.log(level, msg, *args)
+            try:
+                await coro(socket, data=message, received_at=received)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                ...
+                # TODO: Handling/Logging...
 
 
-class FrameListener(WSListener):
-    def __init__(self, socket: Websocket, /) -> None:
+class WebsocketFrame(WSListener):
+    def __init__(self, socket: Websocket) -> None:
+        super().__init__()
+
         self._socket = socket
-        self._watcher = socket._watcher
-        self._loop = socket._loop
-        self._eager = self.has_eager()
+        self._close_code: WSCloseCode | None = None
+        self._close_reason: str | None = None
+        self._close_expected: bool = False
 
-        self._tasks: set[asyncio.Task[None]] = set()
-
-    def has_eager(self) -> bool:
-        if PY_314:
-            return True
-
-        return self._loop.get_task_factory() == asyncio.eager_task_factory
-
-    @no_type_check  # asyncio has bad typing for the tasks in 3.14
     def on_ws_frame(self, transport: WSTransport, frame: WSFrame) -> None:
-        if frame.msg_type is WSMsgType.PING:
-            transport.send_pong(frame.get_payload_as_bytes())
+        if frame.msg_type is WSMsgType.TEXT:
+            try:
+                data = JSON_LOADS(frame.get_payload_as_bytes())
+            except Exception as e:
+                LOGGER.error("Unable to process message for %r: %r", self._socket, frame, exc_info=e)
+                return
+
+            self._socket.ack()
+            self._socket._messages.put_nowait((time.monotonic(), data))
             return
 
-        if not self._eager:
-            return self._on_ws_frame(transport, frame)
-
-        eager = self._eager_on_ws_frame(transport, frame)
-        t = asyncio.create_task(eager, eager_start=True) if PY_314 else asyncio.create_task(eager)
-
-        self._tasks.add(t)
-        t.add_done_callback(self._tasks.discard)
-
-    async def _eager_on_ws_frame(self, transport: WSTransport, frame: WSFrame) -> None:
-        # NOTE: It would be faster to NOT create an eager task and await here, however;
-        # if we dispatch events as an eager task the user would need to ensure they await
-        # in each subscribed event at some point, otherwise the websocket will block the event loop.
-        if frame.msg_type is WSMsgType.TEXT:
-            self._watcher.update()
-
-            data = JSON_LOADS(frame.get_payload_as_bytes())
-            await self._socket.receive_message(data)
-
-        elif frame.msg_type is WSMsgType.CLOSE:
-            await self.on_close_code(transport, frame.get_close_code())
-
-    def _on_ws_frame(self, transport: WSTransport, frame: WSFrame) -> None:
-        t: asyncio.Task[None] | None = None
-
-        if frame.msg_type is WSMsgType.TEXT:
-            self._watcher.update()
-
-            data = JSON_LOADS(frame.get_payload_as_bytes())
-            t = asyncio.create_task(self._socket.receive_message(data))
-
-        elif frame.msg_type is WSMsgType.CLOSE:
-            t = asyncio.create_task(self.on_close_code(transport, frame.get_close_code()))
-
-        if t is None:
+        if frame.msg_type is not WSMsgType.CLOSE:
             return
 
-        self._tasks.add(t)
-        t.add_done_callback(self._tasks.discard)
+        self._close_code = frame.get_close_code()
+        self._close_reason = frame.get_close_reason()
 
-    async def on_close_code(self, transport: WSTransport, code: WSCloseCode) -> ...:
-        print(code.value)
+        LOGGER.debug("%r received CLOSE %s: %s", self._socket, self._close_code, self._close_reason)
+        transport.send_close(WSCloseCode.OK)
+        transport.disconnect()
 
 
 class Websocket:
-    _listener: FrameListener
-    _transport: WSTransport
+    __slots__ = ("_channel_task", "_last_ack", "_messages", "_ready_event", "_session_id", "_watcher_task", "container")
 
-    MIN_KEEP_ALIVE: ClassVar[int] = 10
-    MAX_KEEP_ALIVE: ClassVar[int] = 600
+    def __init__(self, manager: WebsocketManager) -> None:
+        self.container: WSContainer = WSContainer(manager=manager, listener=None, transport=None)
 
-    def __init__(self, watcher: WebsocketWatcher, /, *, shard_id: int | None = None, keep_alive_timeout: int = 10) -> None:
-        self._watcher = watcher
-        self._loop = asyncio.get_event_loop()
-        self._welcomed = asyncio.Event()
+        self._session_id: str | None = None
+        self._ready_event = asyncio.Event()
+        self._last_ack: float = time.monotonic()
 
-        self._keep_alive = max(self.MIN_KEEP_ALIVE, min(keep_alive_timeout, self.MAX_KEEP_ALIVE))
-        if self._keep_alive != keep_alive_timeout:
-            LOGGER.warning("'keep_alive_timeout' for %r was out of bounds. Setting timeout to: %s", self, self._keep_alive)
-
-        self._shard_id = shard_id
-        self._is_conduit = shard_id is not None
-        self._session_id: str = MISSING
-
-        self._can_reconnect: bool = True
-
-    def __repr__(self) -> str:
-        return f"Websocket(shard_id={self._shard_id})"
-
-    def __str__(self) -> str: ...
+        self._messages: asyncio.Queue[tuple[float, Any]] = asyncio.Queue()
+        self._channel_task: asyncio.Task[None] | None = None
+        self._watcher_task: asyncio.Task[None] | None = None
 
     @property
-    def watcher(self) -> WebsocketWatcher:
-        return self._watcher
+    def manager(self) -> WebsocketManager:
+        return self.container.manager
 
     @property
-    def shard_id(self) -> int | None:
-        return self._shard_id
+    def listener(self) -> WebsocketFrame | None:
+        return self.container.listener
 
     @property
-    def session_id(self) -> str:
+    def transport(self) -> WSTransport | None:
+        return self.container.transport
+
+    @property
+    def session_id(self) -> str | None:
         return self._session_id
 
     @property
-    def keep_alive_timeout(self) -> int:
-        return self._keep_alive
+    def is_ready(self) -> bool:
+        return self._ready_event.is_set()
 
-    def listener_factory(self) -> FrameListener:
-        listener = FrameListener(self)
-        return listener
+    @property
+    def is_open(self) -> bool:
+        return bool(self.transport and not self.transport.is_disconnected)
 
-    async def connect(self) -> ...:
-        transport, listener = await ws_connect(self.listener_factory, WSS_URL, enable_auto_pong=False)
+    @property
+    def last_ack(self) -> float:
+        return self._last_ack
 
-        self._listener = listener  # type: ignore
-        self._transport = transport
+    def listener_factory(self) -> WebsocketFrame:
+        return WebsocketFrame(self)
 
-    async def close(self) -> ...: ...
+    async def open(self, *, uri: str = MISSING) -> Self:
+        self._ready_event.clear()
 
-    async def receive_message(self, data: Any) -> ...:
-        metadata: MetaData = data["metadata"]
-        message_type: MessageTypes = metadata["message_type"]
+        uri = uri if uri is not MISSING else WSS_URL
+        transport, listener = await ws_connect(url=uri, ws_listener_factory=self.listener_factory)
 
-        if message_type == "notification":
-            notification: NotificationMessage = data
-            LOGGER.debug("%r received notification message: %s", self, notification)
+        self.container.transport = transport
+        self.container.listener = cast("WebsocketFrame", listener)
+        self._start_background_tasks()
 
-        elif message_type == "session_keepalive":
-            keepalive: KeepAliveMessage = data
-            LOGGER.debug("%r received keepalive message: %s", self, keepalive)
-            self._watcher.update()
+        return self
 
-        elif message_type == "session_reconnect":
-            reconnect: ReconnectMessage = data
-            LOGGER.debug("%r received reconnect message: %s", self, reconnect)
+    async def close(self) -> None: ...
 
-        elif message_type == "session_welcome":
-            welcome: WelcomeMessage = data
-            LOGGER.debug("%r received welcome message: %s", self, welcome)
-            self._welcomed.set()
+    def cleanup(self) -> None: ...
 
-        elif message_type == "revocation":
-            revocation: RevocationMessage = data
-            LOGGER.debug("%r received revocation message: %s", self, revocation)
+    async def resume(self) -> None: ...
 
-    async def wait_for_welcome(self) -> None:
-        await self._welcomed.wait()
+    def _start_background_tasks(self) -> None:
+        if self._channel_task or self._watcher_task:
+            raise WebsocketException("Cannot duplicate websocket background tasks. A channel is already running.")
 
-    async def poll(self) -> float:
-        rts = await self._transport.measure_roundtrip_time(1)
-        return rts[0]
+        LOGGER.debug("Starting background tasks on websocket %r", self)
+
+        assert self.listener
+        self._channel_task = asyncio.create_task(self.manager._socket_channel(self))
+        self._watcher_task = asyncio.create_task(self._watcher(self.listener))
+
+    async def _watcher(self, listener: WebsocketFrame) -> None:
+        assert self.transport and self.listener
+        error: Exception | None = None
+
+        try:
+            await self.transport.wait_disconnected()
+        except Exception as e:
+            error = e
+
+        if listener._close_expected:
+            LOGGER.debug("Ignoring excpected closure in %r.", self)
+            return
+
+        if listener is not self.listener:
+            LOGGER.debug("Ignoring closure from a superseded listener in %r. Twitch has likely resumed this socket.", self)
+            return
+
+        await self.manager._handle_reconnect(self, error=error)
+
+    def ack(self) -> None:
+        self._last_ack = time.monotonic()
+
+    def set_ready(self) -> None:
+        self._ready_event.set()
+
+    async def wait_for_ready(self) -> None:
+        async with asyncio.timeout(MIN_KEEP_ALIVE):
+            await self._ready_event.wait()
