@@ -70,7 +70,6 @@ __all__ = (
     "ChannelPollEndEvent",
     "ChannelPollProgressEvent",
     "ChannelPredictionBeginEvent",
-    "ChannelPredictionBeginEvent",
     "ChannelPredictionEndEvent",
     "ChannelPredictionLockEvent",
     "ChannelPredictionProgressEvent",
