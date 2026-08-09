@@ -89,19 +89,31 @@ class _BaseSubscription[T]:
         self._data = {"type": self.type, "version": self.version, "condition": self._condition}
 
     def _check_condition(self, condition: Any) -> None:
-        provided = condition.keys()
-        args = self.__condition_keys__
+        provided = set(condition)
+        allowed = self.__condition_keys__
         required = self.__condition_required__
 
         if not provided:
+            expected = ", ".join(map(repr, sorted(allowed)))
             raise MissingConditionError(
-                f"Missing at least one condition keyword-arguments for {self.__class__.__name__}: {', '.join(f'{a!r}' for a in args)}"
+                f"At least one condition keyword argument is required "
+                f"for {type(self).__name__}: {expected}"
             )
 
-        missing_required = required - provided
-        if missing_required:
+        missing = required - provided
+        if missing:
+            names = ", ".join(map(repr, sorted(missing)))
             raise MissingConditionError(
-                f"Missing required condition keyword-argument(s) for {self.__class__.__name__}: {', '.join(f'{a!r}' for a in missing_required)}"
+                f"Missing required condition keyword argument(s) "
+                f"for {type(self).__name__}: {names}"
+            )
+
+        unexpected = provided - allowed
+        if unexpected:
+            names = ", ".join(map(repr, sorted(unexpected)))
+            raise ValueError(
+                f"Unexpected condition keyword argument(s) "
+                f"for {type(self).__name__}: {names}"
             )
 
     def route(self) -> Route:
