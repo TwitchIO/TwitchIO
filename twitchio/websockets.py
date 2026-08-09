@@ -64,6 +64,7 @@ LOGGER: logging.Logger = logging.getLogger(__name__)
 WSS_URL: str = "wss://eventsub.wss.twitch.tv/ws"
 MIN_KEEP_ALIVE: int = 10
 MAX_KEEP_ALIVE: int = 600
+KEEP_ALIVE_GRACE: int = 2
 CLEANUP_TIMEOUT: int = 5
 
 FAIL_CODES: tuple[int | WSCloseCode, ...] = (
@@ -157,12 +158,12 @@ class WebsocketManager:
 
     async def _dispatch_revocation(self, socket: Websocket, *, data: RevocationMessage, received_at: float) -> ...: ...
 
-    def _wrap_notification(self, socket: Websocket, *, message: NotificationMessage) -> None:
+    def _wrap_notification(self, socket: Websocket, listener: WebsocketFrame, *, message: NotificationMessage) -> None:
         task = asyncio.create_task(self._dispatch_notification(socket, data=message))
-        self._tasks.add(task)
-        task.add_done_callback(self._tasks.discard)
+        listener._notifications.add(task)
+        task.add_done_callback(listener._notifications.discard)
 
-    async def _process_message(self, socket: Websocket, *, data: tuple[float, Any]) -> None:
+    async def _process_message(self, socket: Websocket, listener: WebsocketFrame, *, data: tuple[float, Any]) -> None:
         try:
             received, message = data
             metadata: MetaData = message["metadata"]
@@ -176,7 +177,7 @@ class WebsocketManager:
             return
 
         elif message_type == "notification":
-            self._wrap_notification(socket, message=message)
+            self._wrap_notification(socket, listener, message=message)
             return
 
         coro = getattr(self, f"_dispatch_{message_type}", None)
@@ -189,14 +190,14 @@ class WebsocketManager:
     async def _socket_channel(self, socket: Websocket, listener: WebsocketFrame) -> None:
         messages = listener._messages
 
-        while not listener._stop_reading:
+        while True:
             try:
                 data: tuple[float, Any] = await messages.get()
             except asyncio.QueueShutDown:
                 break
 
             try:
-                await self._process_message(socket, data=data)
+                await self._process_message(socket, listener, data=data)
             except asyncio.CancelledError:
                 raise
             except Exception:
@@ -218,6 +219,7 @@ class WebsocketFrame(WSListener):
         self._close_expected: bool = False
         self._stop_reading: bool = False
         self._messages: asyncio.Queue[tuple[float, Any]] = asyncio.Queue()
+        self._notifications: set[asyncio.Task[None]] = set()
 
     def on_ws_frame(self, transport: WSTransport, frame: WSFrame) -> None:
         if self._stop_reading:
@@ -254,7 +256,10 @@ class Websocket:
     __slots__ = (
         "_channel_task",
         "_closing",
+        "_keepalive",
+        "_keepalive_task",
         "_last_ack",
+        "_opened",
         "_opening",
         "_ready_event",
         "_session_id",
@@ -268,10 +273,15 @@ class Websocket:
         self._session_id: str | None = None
         self._ready_event = asyncio.Event()
         self._last_ack: float = time.monotonic()
+        self._keepalive: int = manager._keepalive
         self._channel_task: asyncio.Task[None] | None = None
         self._watcher_task: asyncio.Task[None] | None = None
+        self._keepalive_task: asyncio.Task[None] | None = None
+
         self._opening: bool = False
         self._closing: bool = False
+        self._opened = asyncio.Event()
+        self._opened.set()
 
     @property
     def manager(self) -> WebsocketManager:
@@ -301,6 +311,10 @@ class Websocket:
     def last_ack(self) -> float:
         return self._last_ack
 
+    @property
+    def keepalive(self) -> int:
+        return self._keepalive
+
     def listener_factory(self) -> WebsocketFrame:
         return WebsocketFrame(self)
 
@@ -310,20 +324,30 @@ class Websocket:
             return
 
         self._opening = True
+        self._opened.clear()
         self._ready_event.clear()
+        self._keepalive = keepalive
 
         if uri is MISSING:
             uri = f"{WSS_URL}?keepalive_timeout_seconds={keepalive}"
 
         try:
             transport, listener = await ws_connect(url=uri, ws_listener_factory=self.listener_factory)
-            if self._closing:
-                transport.send_close(WSCloseCode.OK)
-                transport.disconnect()
-                return self.cleanup()
+        except BaseException:
+            self.cleanup()
+            raise
         finally:
             self._opening = False
+            self._opened.set()
 
+        if self._closing:
+            LOGGER.debug("%r was closed while connecting. Discarding websocket.", self)
+            transport.send_close(WSCloseCode.OK)
+            transport.disconnect()
+            self.cleanup()
+            return
+
+        self._last_ack = time.monotonic()
         self.container.transport = transport
         self.container.listener = cast("WebsocketFrame", listener)
         self._start_background_tasks()
@@ -334,6 +358,12 @@ class Websocket:
 
         self._closing = True
         if self._opening:
+            try:
+                async with asyncio.timeout(CLEANUP_TIMEOUT):
+                    await self._opened.wait()
+            except TimeoutError:
+                LOGGER.warning("%r is still connecting after %ds. Leaving teardown to open().", self, CLEANUP_TIMEOUT)
+
             return
 
         if self.listener:
@@ -366,7 +396,7 @@ class Websocket:
     def cleanup(self) -> None:
         current = asyncio.current_task()
 
-        for task in (self._channel_task, self._watcher_task):
+        for task in (self._channel_task, self._watcher_task, self._keepalive_task):
             if task is not None and task is not current:
                 task.cancel()
 
@@ -376,6 +406,7 @@ class Websocket:
         self.container.transport = None
         self._channel_task = None
         self._watcher_task = None
+        self._keepalive_task = None
 
         self._closing = False
 
@@ -385,10 +416,20 @@ class Websocket:
         async with asyncio.timeout(CLEANUP_TIMEOUT):
             await listener._messages.join()
 
+            pending = tuple(listener._notifications)
+            if not pending:
+                return
+
+            if immediate:
+                for task in pending:
+                    task.cancel()
+
+            await asyncio.gather(*pending, return_exceptions=True)
+
     async def resume(self) -> None: ...
 
     def _start_background_tasks(self) -> None:
-        if self._channel_task or self._watcher_task:
+        if self._channel_task or self._watcher_task or self._keepalive_task:
             raise WebsocketException("Cannot duplicate websocket background tasks. A channel is already running.")
 
         LOGGER.debug("Starting background tasks on websocket %r", self)
@@ -396,6 +437,7 @@ class Websocket:
         assert self.listener
         self._channel_task = asyncio.create_task(self.manager._socket_channel(self, self.listener))
         self._watcher_task = asyncio.create_task(self._watcher(self.listener))
+        self._keepalive_task = asyncio.create_task(self._keepalive_watcher())
 
     async def _watcher(self, listener: WebsocketFrame) -> None:
         assert self.transport and self.listener
@@ -418,6 +460,25 @@ class Websocket:
         self.manager._tasks.add(task)
         task.add_done_callback(self.manager._tasks.discard)
 
+    async def _keepalive_watcher(self) -> None:
+        timeout = self._keepalive + KEEP_ALIVE_GRACE
+
+        while True:
+            delta = time.monotonic() - self._last_ack
+
+            if delta < timeout:
+                await asyncio.sleep(timeout - delta)
+                continue
+
+            msg = "%r has received no data for %.1fs (keepalive: %ds). Assuming connection is stale... Attempting reconnect."
+            LOGGER.warning(msg, delta, self._keepalive)
+
+            transport = self.transport
+            if transport and not transport.is_disconnected:
+                transport.disconnect()
+
+            return
+
     def ack(self) -> None:
         self._last_ack = time.monotonic()
 
@@ -425,5 +486,5 @@ class Websocket:
         self._ready_event.set()
 
     async def wait_for_ready(self) -> None:
-        async with asyncio.timeout(MIN_KEEP_ALIVE):
+        async with asyncio.timeout(self._keepalive):
             await self._ready_event.wait()
