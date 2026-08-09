@@ -28,7 +28,7 @@ import dataclasses
 import logging
 import time
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Self, cast
 
 from picows import (
     WSCloseCode,
@@ -96,6 +96,12 @@ class WebsocketManager:
         self._tasks: set[asyncio.Task[None]] = set()
         self._keepalive = int(min(max(keepalive_timeout, MIN_KEEP_ALIVE), MAX_KEEP_ALIVE))
 
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
+        await self.shutdown()
+
     @property
     def sockets(self) -> MappingProxyType[str, Websocket]:
         return MappingProxyType(self._sockets)
@@ -126,6 +132,8 @@ class WebsocketManager:
     async def reconnect_socket(self, socket: Websocket, *, soft: bool = False) -> ...: ...
 
     async def open_socket(self) -> ...:
+        # TODO: ...
+
         ws = Websocket(self)
         await ws.open(keepalive=self._keepalive)
 
@@ -307,24 +315,34 @@ class Websocket:
         if uri is MISSING:
             uri = f"{WSS_URL}?keepalive_timeout_seconds={keepalive}"
 
-        transport, listener = await ws_connect(url=uri, ws_listener_factory=self.listener_factory)
+        try:
+            transport, listener = await ws_connect(url=uri, ws_listener_factory=self.listener_factory)
+            if self._closing:
+                transport.send_close(WSCloseCode.OK)
+                transport.disconnect()
+                return self.cleanup()
+        finally:
+            self._opening = False
+
         self.container.transport = transport
         self.container.listener = cast("WebsocketFrame", listener)
         self._start_background_tasks()
 
-        self._opening = False
-
     async def close(self, *, code: WSCloseCode = WSCloseCode.OK, force: bool = False) -> None:
-        if self._closing or self._opening:
+        if self._closing:
             return
 
         self._closing = True
-        if self.transport and not self.transport.is_disconnected:
-            await self._cleanup_transport(code)
+        if self._opening:
+            return
 
         if self.listener:
             self.listener._close_expected = True
 
+        if self.transport and not self.transport.is_disconnected:
+            await self._cleanup_transport(code)
+
+        if self.listener:
             try:
                 await self.drain(self.listener, immediate=force)
             except TimeoutError:
