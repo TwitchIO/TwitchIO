@@ -96,25 +96,18 @@ class _BaseSubscription[T]:
         if not provided:
             expected = ", ".join(map(repr, sorted(allowed)))
             raise MissingConditionError(
-                f"At least one condition keyword argument is required "
-                f"for {type(self).__name__}: {expected}"
+                f"At least one condition keyword argument is required for {type(self).__name__}: {expected}"
             )
 
         missing = required - provided
         if missing:
             names = ", ".join(map(repr, sorted(missing)))
-            raise MissingConditionError(
-                f"Missing required condition keyword argument(s) "
-                f"for {type(self).__name__}: {names}"
-            )
+            raise MissingConditionError(f"Missing required condition keyword argument(s) for {type(self).__name__}: {names}")
 
         unexpected = provided - allowed
         if unexpected:
             names = ", ".join(map(repr, sorted(unexpected)))
-            raise ValueError(
-                f"Unexpected condition keyword argument(s) "
-                f"for {type(self).__name__}: {names}"
-            )
+            raise ValueError(f"Unexpected condition keyword argument(s) for {type(self).__name__}: {names}")
 
     def route(self) -> Route:
         return Route(self.path, method=self.method, data=self._data)
