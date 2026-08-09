@@ -23,10 +23,26 @@ SOFTWARE.
 
 from __future__ import annotations
 
-from typing import ClassVar, Literal, Unpack
+from types import get_original_bases
+from typing import (
+    Any,
+    ClassVar,
+    Literal,
+    NotRequired,
+    Required,
+    Unpack,
+    get_args,
+    get_origin,
+    get_type_hints,
+    is_typeddict,
+)
 
+from ..exceptions import MissingConditionError
 from ..http import Route
 from .conditions import *
+
+
+__all__ = ("ChatMessageSubscription", "Subscription")
 
 
 # TODO: Check condition keys are valid?
@@ -39,13 +55,54 @@ class _BaseSubscription[T]:
     type: str
     version: str
     scopes: ClassVar[...]
+    __condition_keys__: ClassVar[frozenset[str]] = frozenset()
+    __condition_required__: ClassVar[frozenset[str]] = frozenset()
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        bases = get_original_bases(cls)
+
+        for base in bases:
+            origin = get_origin(base)
+            if not isinstance(origin, type) or not issubclass(origin, _BaseSubscription):
+                continue
+
+            for arg in get_args(base):
+                if not is_typeddict(arg):
+                    continue
+
+                hints = get_type_hints(arg, include_extras=True)
+                cls.__condition_keys__ = frozenset(hints)
+                cls.__condition_required__ = frozenset(
+                    key
+                    for key, hint in hints.items()
+                    if get_origin(hint) is Required or (arg.__total__ and get_origin(hint) is not NotRequired)
+                )
+
+        super().__init_subclass__(**kwargs)
 
     def __init__(self, *, condition: T, type: str, version: str) -> None:
         self._condition: T = condition
+        self._check_condition(condition)
+
         self.type = type
         self.version = version
-
         self._data = {"type": self.type, "version": self.version, "condition": self._condition}
+
+    def _check_condition(self, condition: Any) -> None:
+        provided = condition.keys()
+        args = self.__condition_keys__
+        required = self.__condition_required__
+
+        if not provided:
+            raise MissingConditionError(
+                f"Missing at least one condition keyword-arguments for {self.__class__.__name__}: {', '.join(f'{a!r}' for a in args)}"
+            )
+
+        missing_required = required - provided
+        if missing_required:
+            raise MissingConditionError(
+                f"Missing required condition keyword-argument(s) for {self.__class__.__name__}: {', '.join(f'{a!r}' for a in missing_required)}"
+            )
 
     def route(self) -> Route:
         return Route(self.path, method=self.method, data=self._data)
@@ -72,7 +129,7 @@ class Subscription[T](_BaseSubscription[T]):
     method: ClassVar[Literal["POST"]]
         The HTTP method used to make the subscription request. This will always be ``"POST"``.
     path: ClassVar[Literal["eventsub/subscriptions"]]
-        The HTTP path ised to make the subscription request. This will aluways be ``"eventsub/subscriptions"``.
+        The HTTP path used to make the subscription request. This will aluways be ``"eventsub/subscriptions"``.
     type: str
         The eventsub subscription type passed to Twitch. E.g. ``"channel.chat.message"``.
         See: https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/ for more info.
