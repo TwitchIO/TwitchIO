@@ -134,6 +134,7 @@ class SubscriptionType(enum.Enum):
     ChannelChannelPointsCustomRewardRemove: Literal["channel.channel_points_custom_reward.remove"]
     ChannelChannelPointsCustomRewardRedemptionAdd: Literal["channel.channel_points_custom_reward_redemption.add"]
     ChannelChannelPointsCustomRewardRedemptionUpdate: Literal["channel.channel_points_custom_reward_redemption.update"]
+    ChannelCustomPowerupRedemptionAdd: Literal["channel.custom_power_up_redemption.add"]
     ChannelPollBegin: Literal["channel.poll.begin"]
     ChannelPollProgres: Literal["channel.poll.progress"]
     ChannelPollEnd: Literal["channel.poll.end"]
@@ -214,6 +215,7 @@ class SubscriptionType(enum.Enum):
     ChannelChannelPointsCustomRewardRemove           = "channel.channel_points_custom_reward.remove"
     ChannelChannelPointsCustomRewardRedemptionAdd    = "channel.channel_points_custom_reward_redemption.add"
     ChannelChannelPointsCustomRewardRedemptionUpdate = "channel.channel_points_custom_reward_redemption.update"
+    ChannelCustomPowerupRedemptionAdd                = "channel.custom_power_up_redemption.add"
     ChannelPollBegin                                 = "channel.poll.begin"
     ChannelPollProgress                              = "channel.poll.progress"
     ChannelPollEnd                                   = "channel.poll.end"
