@@ -188,9 +188,11 @@ class WebsocketManager:
 
     async def batch_close(self) -> ...: ...
 
-    async def shutdown(self) -> ...:
+    async def shutdown(self) -> None:
         if self._shutdown:
             return
+
+        self._shutdown = True
 
         for sock in self._sockets.values():
             await sock.close()
@@ -206,7 +208,6 @@ class WebsocketManager:
 
     async def _dispatch_session_welcome(self, socket: Websocket, *, data: WelcomeMessage, received_at: float) -> ...:
         LOGGER.debug("Received 'session_welcome' on %r: %s", socket, data)
-
         socket._session_id = data["payload"]["session"]["id"]
         socket.set_ready()
 
@@ -220,6 +221,8 @@ class WebsocketManager:
         except Exception as e:
             LOGGER.error("Unknown exception processing message in %r: %s. Data: %s", socket, e, data, exc_info=e)
             return
+
+        self._client.dispatcher.publish("raw_socket", payload=message)
 
         if message_type == "session_keepalive":
             LOGGER.debug("Received 'session_keepalive' on %r: %s", socket, data)
