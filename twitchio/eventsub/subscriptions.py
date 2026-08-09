@@ -37,6 +37,7 @@ from typing import (
     is_typeddict,
 )
 
+from ..enums import SubscriptionType
 from ..exceptions import MissingConditionError
 from ..http import Route
 from .conditions import *
@@ -44,15 +45,13 @@ from .conditions import *
 
 __all__ = ("ChatMessageSubscription", "Subscription")
 
-
-# TODO: Check condition keys are valid?
 # TODO: Doc generic classes
 
 
 class _BaseSubscription[T]:
     method: ClassVar[Literal["POST"]] = "POST"
     path: ClassVar[Literal["eventsub/subscriptions"]] = "eventsub/subscriptions"
-    type: str
+    type: SubscriptionType
     version: str
     scopes: ClassVar[...]
     __condition_keys__: ClassVar[frozenset[str]] = frozenset()
@@ -80,7 +79,7 @@ class _BaseSubscription[T]:
 
         super().__init_subclass__(**kwargs)
 
-    def __init__(self, *, condition: T, type: str, version: str) -> None:
+    def __init__(self, *, condition: T, type: SubscriptionType, version: str) -> None:
         self._condition: T = condition
         self._check_condition(condition)
 
@@ -145,14 +144,12 @@ class Subscription[T](_BaseSubscription[T]):
         ...
     """
 
-    # TODO: "type" and "version" Literal type...
-
-    def __init__(self, *, condition: T, type: str, version: str) -> None:
+    def __init__(self, *, condition: T, type: SubscriptionType, version: str) -> None:
         super().__init__(condition=condition, type=type, version=version)
 
 
 class ChatMessageSubscription(Subscription[ChannelChatMessageCT]):
-    _type: ClassVar[str] = "channel.chat.message"
+    _type: ClassVar[SubscriptionType] = SubscriptionType.ChannelChatMessage
     _version: ClassVar[str] = "1"
     scopes: ClassVar[...]
 
