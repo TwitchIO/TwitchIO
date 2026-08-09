@@ -39,7 +39,8 @@ from picows import (
     ws_connect,  # type: ignore
 )
 
-from .exceptions import WebsocketException
+from .backoff import Backoff
+from .exceptions import WebsocketConnectionError, WebsocketException
 from .utils import JSON_LOADS, MISSING
 
 
@@ -66,6 +67,7 @@ MIN_KEEP_ALIVE: int = 10
 MAX_KEEP_ALIVE: int = 600
 KEEP_ALIVE_GRACE: int = 2
 CLEANUP_TIMEOUT: int = 5
+SOFT_RETRIES: int = 3
 
 FAIL_CODES: tuple[int | WSCloseCode, ...] = (
     WSCloseCode.PROTOCOL_ERROR,
@@ -96,6 +98,7 @@ class WebsocketManager:
         self._sockets: dict[str, Websocket] = {}
         self._tasks: set[asyncio.Task[None]] = set()
         self._keepalive = int(min(max(keepalive_timeout, MIN_KEEP_ALIVE), MAX_KEEP_ALIVE))
+        self._shutdown: bool = False
 
     async def __aenter__(self) -> Self:
         return self
@@ -130,13 +133,54 @@ class WebsocketManager:
         LOGGER.info("%r was disconnected (%s). Attempting to reconnect...", socket, code)
         await self.reconnect_socket(socket=socket, soft=code in SOFT_FAIL_CODES)
 
-    async def reconnect_socket(self, socket: Websocket, *, soft: bool = False) -> ...: ...
+    async def reconnect_socket(self, socket: Websocket, *, soft: bool = False) -> ...:
+        if not socket.session_id:
+            return
 
-    async def open_socket(self) -> ...:
-        # TODO: ...
+        retries = SOFT_RETRIES if soft else float("inf")
+        self._sockets.pop(socket.session_id, None)
+        await socket.close()
 
-        ws = Websocket(self)
+        while True:
+            error: BaseException | None = None
+
+            try:
+                new = await self.open_socket(shard_id=socket.shard_id)
+            except WebsocketException as e:
+                LOGGER.error("Unable to reconnect %r: %s", socket, e)
+            except BaseException as e:
+                error = e
+            else:
+                break
+
+            retries -= 1
+            if retries <= 0:
+                LOGGER.warning("Unable to reconnect %r. Maximum retries exceeded.", socket)
+                return
+
+            retry = socket._backoff.calculate()
+            LOGGER.warning("Reconnection for %r failed: %s. Retrying connection in %s seconds.", socket, error, retry)
+            await asyncio.sleep(retry)
+
+        LOGGER.info("%r has successfully re-connected as %r.", socket, new)
+
+    async def open_socket(self, shard_id: int | None = None) -> Websocket:
+        if self._shutdown:
+            raise WebsocketException("WebsocketManager is closed or closing. Cannot open a new socket connection.")
+
+        ws = Websocket(self, shard_id=shard_id)
         await ws.open(keepalive=self._keepalive)
+
+        try:
+            await ws.wait_for_ready()
+        except TimeoutError as e:
+            await ws.close()
+            raise WebsocketConnectionError("Websocket timed out waiting for Twitch welcome payload.") from e
+
+        assert ws.session_id
+        self._sockets[ws.session_id] = ws
+
+        return ws
 
     async def batch_open(self) -> ...: ...
 
@@ -144,7 +188,17 @@ class WebsocketManager:
 
     async def batch_close(self) -> ...: ...
 
-    async def shutdown(self) -> ...: ...
+    async def shutdown(self) -> ...:
+        if self._shutdown:
+            return
+
+        for sock in self._sockets.values():
+            await sock.close()
+
+        for task in self._tasks:
+            task.cancel()
+
+        # TODO: logging...
 
     async def _dispatch_notification(self, socket: Websocket, *, data: NotificationMessage) -> ...: ...
 
@@ -201,6 +255,8 @@ class WebsocketManager:
 
 
 class WebsocketFrame(WSListener):
+    __slots__ = ("_close_code", "_close_expected", "_close_reason", "_messages", "_socket", "_stop_reading")
+
     def __init__(self, socket: Websocket) -> None:
         super().__init__()
 
@@ -244,6 +300,7 @@ class WebsocketFrame(WSListener):
 
 class Websocket:
     __slots__ = (
+        "_backoff",
         "_channel_task",
         "_closing",
         "_keepalive",
@@ -253,14 +310,17 @@ class Websocket:
         "_opening",
         "_ready_event",
         "_session_id",
+        "_shard_id",
         "_watcher_task",
         "container",
     )
 
-    def __init__(self, manager: WebsocketManager) -> None:
+    def __init__(self, manager: WebsocketManager, *, shard_id: int | None = None) -> None:
         self.container: WSContainer = WSContainer(manager=manager, listener=None, transport=None)
+        self._backoff = Backoff()
 
         self._session_id: str | None = None
+        self._shard_id = shard_id
         self._ready_event = asyncio.Event()
         self._last_ack: float = time.monotonic()
         self._keepalive: int = manager._keepalive
@@ -272,6 +332,9 @@ class Websocket:
         self._closing: bool = False
         self._opened = asyncio.Event()
         self._opened.set()
+
+    def __repr__(self) -> str:
+        return f"Websocket(session_id={self._session_id}, shard_id={self._shard_id})"
 
     @property
     def manager(self) -> WebsocketManager:
@@ -288,6 +351,10 @@ class Websocket:
     @property
     def session_id(self) -> str | None:
         return self._session_id
+
+    @property
+    def shard_id(self) -> int | None:
+        return self._shard_id
 
     @property
     def is_ready(self) -> bool:
