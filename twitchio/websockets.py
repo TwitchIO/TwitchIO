@@ -401,7 +401,6 @@ class Websocket:
                 task.cancel()
 
         self._ready_event.clear()
-        self._session_id = None
         self.container.listener = None
         self.container.transport = None
         self._channel_task = None
