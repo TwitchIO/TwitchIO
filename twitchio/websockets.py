@@ -158,11 +158,6 @@ class WebsocketManager:
 
     async def _dispatch_revocation(self, socket: Websocket, *, data: RevocationMessage, received_at: float) -> ...: ...
 
-    def _wrap_notification(self, socket: Websocket, listener: WebsocketFrame, *, message: NotificationMessage) -> None:
-        task = asyncio.create_task(self._dispatch_notification(socket, data=message))
-        listener._notifications.add(task)
-        task.add_done_callback(listener._notifications.discard)
-
     async def _process_message(self, socket: Websocket, listener: WebsocketFrame, *, data: tuple[float, Any]) -> None:
         try:
             received, message = data
@@ -174,10 +169,6 @@ class WebsocketManager:
 
         if message_type == "session_keepalive":
             LOGGER.debug("Received 'session_keepalive' on %r: %s", socket, data)
-            return
-
-        elif message_type == "notification":
-            self._wrap_notification(socket, listener, message=message)
             return
 
         coro = getattr(self, f"_dispatch_{message_type}", None)
@@ -219,7 +210,6 @@ class WebsocketFrame(WSListener):
         self._close_expected: bool = False
         self._stop_reading: bool = False
         self._messages: asyncio.Queue[tuple[float, Any]] = asyncio.Queue()
-        self._notifications: set[asyncio.Task[None]] = set()
 
     def on_ws_frame(self, transport: WSTransport, frame: WSFrame) -> None:
         if self._stop_reading:
@@ -414,16 +404,6 @@ class Websocket:
 
         async with asyncio.timeout(CLEANUP_TIMEOUT):
             await listener._messages.join()
-
-            pending = tuple(listener._notifications)
-            if not pending:
-                return
-
-            if immediate:
-                for task in pending:
-                    task.cancel()
-
-            await asyncio.gather(*pending, return_exceptions=True)
 
     async def resume(self) -> None: ...
 
