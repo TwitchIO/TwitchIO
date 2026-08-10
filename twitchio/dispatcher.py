@@ -61,26 +61,20 @@ class EventDispatcher:
                 return listener
 
     def publish(self, name: str, /, *, safe: bool = False, payload: Any = MISSING) -> None:
-        name = name.lower()
-        name = f"event_{name}"
+        name = f"event_{name.lower()}"
         name = f"safe_{name}" if safe else name
 
-        listeners = self._listeners[name]
+        listeners = self._listeners.get(name)
         if not listeners:
             return
 
-        t = asyncio.create_task(self.dispatch(listeners, name=name, payload=payload), name="EventDispatcher:dispatch-task")
-        self.__tasks.add(t)
-        t.add_done_callback(self.__tasks.discard)
-
-    async def dispatch(self, listeners: set[CB], *, name: str, payload: Any) -> None:
-        name = f"EventDispatcher:{name}-task"
-        tasks = [
-            asyncio.create_task(self.wrap_event(listener=listener, payload=payload), name=f"{name}-{i}")
-            for i, listener in enumerate(listeners)
-        ]
-
-        await asyncio.gather(*tasks, return_exceptions=True)
+        for i, listener in enumerate(listeners):
+            task = asyncio.create_task(
+                self.wrap_event(listener=listener, payload=payload),
+                name=f"EventDispatcher:{name}-task-{i}",
+            )
+            self.__tasks.add(task)
+            task.add_done_callback(self.__tasks.discard)
 
     async def wrap_event(self, *, listener: CB, payload: Any) -> None:
         try:
