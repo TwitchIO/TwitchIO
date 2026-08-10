@@ -27,6 +27,7 @@ import asyncio
 import dataclasses
 import logging
 import time
+from collections.abc import Callable, Coroutine
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Self, cast
 
@@ -60,6 +61,8 @@ if TYPE_CHECKING:
 
 __all__ = ("WebsocketManager",)
 
+
+type HandlersT = dict[MessageTypes, Callable[..., None] | Callable[..., Coroutine[Any, Any, None]]]
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
 logging.getLogger("picows").setLevel(logging.WARNING)
@@ -102,6 +105,12 @@ class WebsocketManager:
         self._tasks: set[asyncio.Task[None]] = set()
         self._keepalive = int(min(max(keepalive_timeout, MIN_KEEP_ALIVE), MAX_KEEP_ALIVE))
         self._shutdown: bool = False
+        self._handlers: HandlersT = {
+            "notification": self._dispatch_notification,
+            "session_reconnect": self._dispatch_session_reconnect,
+            "session_welcome": self._dispatch_session_welcome,
+            "revocation": self._dispatch_revocation,
+        }
 
     async def __aenter__(self) -> Self:
         return self
@@ -271,13 +280,13 @@ class WebsocketManager:
             LOGGER.debug("Received 'session_keepalive' on %r: %s", socket, data)
             return
 
-        func = getattr(self, f"_dispatch_{message_type}", None)
+        func = self._handlers.get(message_type, None)
         if not func:
             LOGGER.warning("Unknown message type received for %r: %s", socket, data)
             return
 
         res = func(socket, data=message, received_at=received)
-        if asyncio.iscoroutine(res):
+        if message_type == "session_reconnect" and res:
             await res
 
     async def _socket_channel(self, socket: Websocket, listener: WebsocketFrame) -> None:
