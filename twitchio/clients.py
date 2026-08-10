@@ -41,6 +41,8 @@ class Client:
         self._events = EventDispatcher()
         self._sockets = WebsocketManager(self)
 
+        self._raw_events = options.get("enable_raw_events", False)
+
         self.__stop_event = asyncio.Event()
         self._closed: bool = False
 
@@ -79,6 +81,9 @@ class Client:
             return
 
         self._closed = True
+
+    async def test(self) -> ...:
+        await self._sockets.open_socket()
 
 
 class ManagedClient(Client): ...

@@ -24,4 +24,8 @@ SOFTWARE.
 from typing import TypedDict
 
 
-class ClientOptionsT(TypedDict): ...
+# TODO: Discuss names of options...
+
+
+class ClientOptionsT(TypedDict):
+    enable_raw_events: bool
