@@ -61,6 +61,8 @@ __all__ = ("WebsocketManager",)
 
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
+logging.getLogger("picows").setLevel(logging.WARNING)
+logging.getLogger("aiofastnet").setLevel(logging.WARNING)
 
 WSS_URL: str = "wss://eventsub.wss.twitch.tv/ws"
 MIN_KEEP_ALIVE: int = 10
@@ -133,7 +135,21 @@ class WebsocketManager:
         LOGGER.info("%r was disconnected (%s). Attempting to reconnect...", socket, code)
         await self.reconnect_socket(socket=socket, soft=code in SOFT_FAIL_CODES)
 
-    async def reconnect_socket(self, socket: Websocket, *, soft: bool = False) -> ...:
+    async def resume_socket(self, socket: Websocket, *, url: str) -> None:
+        # TODO: Logging...
+
+        try:
+            new = await self.open_socket(shard_id=socket.shard_id, url=url)
+        except BaseException:
+            # TODO: Logging...
+            return await self.reconnect_socket(socket)
+
+        if new.session_id != socket.session_id:
+            self._sockets.pop(str(socket.session_id), None)
+
+        await socket.close()
+
+    async def reconnect_socket(self, socket: Websocket, *, soft: bool = False) -> None:
         if not socket.session_id:
             return
 
@@ -164,12 +180,12 @@ class WebsocketManager:
 
         LOGGER.info("%r has successfully re-connected as %r.", socket, new)
 
-    async def open_socket(self, shard_id: int | None = None) -> Websocket:
+    async def open_socket(self, *, shard_id: int | None = None, url: str = MISSING) -> Websocket:
         if self._shutdown:
             raise WebsocketException("WebsocketManager is closed or closing. Cannot open a new socket connection.")
 
         ws = Websocket(self, shard_id=shard_id)
-        await ws.open(keepalive=self._keepalive)
+        await ws.open(keepalive=self._keepalive, uri=url)
 
         try:
             await ws.wait_for_ready()
@@ -184,7 +200,9 @@ class WebsocketManager:
 
     async def batch_open(self) -> ...: ...
 
-    async def close_socket(self, socket: Websocket) -> ...: ...
+    async def close_socket(self, socket: Websocket) -> ...:
+        await socket.close()
+        self._sockets.pop(str(socket.session_id), None)
 
     async def batch_close(self) -> ...: ...
 
@@ -202,18 +220,21 @@ class WebsocketManager:
 
         # TODO: logging...
 
-    async def _dispatch_notification(self, socket: Websocket, *, data: NotificationMessage) -> ...: ...
+    async def _dispatch_notification(self, socket: Websocket, *, data: NotificationMessage, received_at: float) -> None: ...
 
-    async def _dispatch_session_reconnect(self, socket: Websocket, *, data: ReconnectMessage, received_at: float) -> ...: ...
+    async def _dispatch_session_reconnect(self, socket: Websocket, *, data: ReconnectMessage, received_at: float) -> ...:
+        url = data["payload"]["session"]["reconnect_url"]
+        await self.resume_socket(socket, url=url)
 
     async def _dispatch_session_welcome(self, socket: Websocket, *, data: WelcomeMessage, received_at: float) -> ...:
         LOGGER.debug("Received 'session_welcome' on %r: %s", socket, data)
+
         socket._session_id = data["payload"]["session"]["id"]
         socket.set_ready()
 
     async def _dispatch_revocation(self, socket: Websocket, *, data: RevocationMessage, received_at: float) -> ...: ...
 
-    async def _process_message(self, socket: Websocket, listener: WebsocketFrame, *, data: tuple[float, Any]) -> None:
+    async def _process_message(self, socket: Websocket, *, data: tuple[float, Any]) -> None:
         try:
             received, message = data
             metadata: MetaData = message["metadata"]
@@ -245,12 +266,12 @@ class WebsocketManager:
                 break
 
             try:
-                await self._process_message(socket, listener, data=data)
+                await self._process_message(socket, data=data)
             except asyncio.CancelledError:
                 raise
-            except Exception:
-                # TODO: Handling/Logging...
-                ...
+            except BaseException as e:
+                LOGGER.debug("%r unable to process message: %s", socket, e, exc_info=e)
+                # TODO: Handling...?
             finally:
                 messages.task_done()
 
@@ -297,8 +318,7 @@ class WebsocketFrame(WSListener):
 
         LOGGER.debug("%r received CLOSE %s: %s", self._socket, self._close_code, self._close_reason)
         self._stop_reading = True
-        transport.send_close(WSCloseCode.OK)
-        transport.disconnect()
+        self._socket.ack()
 
 
 class Websocket:
@@ -337,7 +357,8 @@ class Websocket:
         self._opened.set()
 
     def __repr__(self) -> str:
-        return f"Websocket(session_id={self._session_id}, shard_id={self._shard_id})"
+        name = "Conduit" if self._shard_id else "Websocket"
+        return f"{name}(session_id={self._session_id}, shard_id={self._shard_id})"
 
     @property
     def manager(self) -> WebsocketManager:
@@ -402,9 +423,6 @@ class Websocket:
 
         if self._closing:
             LOGGER.debug("%r was closed while connecting. Discarding websocket.", self)
-            transport.send_close(WSCloseCode.OK)
-            transport.disconnect()
-            self.cleanup()
             return
 
         self._last_ack = time.monotonic()
@@ -415,6 +433,8 @@ class Websocket:
     async def close(self, *, code: WSCloseCode = WSCloseCode.OK, force: bool = False) -> None:
         if self._closing:
             return
+
+        LOGGER.debug("Attempting to gracefully close %r.", self)
 
         self._closing = True
         if self._opening:
@@ -441,6 +461,7 @@ class Websocket:
                 self.listener._stop_reading = True
 
         self.cleanup()
+        LOGGER.debug("%r has successfully closed and disconnected.", self)
 
     async def _cleanup_transport(self, code: WSCloseCode) -> None:
         assert self.transport
@@ -519,8 +540,8 @@ class Websocket:
                 await asyncio.sleep(timeout - delta)
                 continue
 
-            msg = "%r has received no data for %.1fs (keepalive: %ds). Assuming connection is stale... Attempting reconnect."
-            LOGGER.warning(msg, delta, self._keepalive)
+            msg = "%r has received no data for %.1fs (keepalive: %ds). Assuming connection is stale."
+            LOGGER.debug(msg, self, delta, self._keepalive)
 
             transport = self.transport
             if transport and not transport.is_disconnected:
