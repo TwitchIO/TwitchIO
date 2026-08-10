@@ -23,5 +23,8 @@ SOFTWARE.
 
 __version__ = "4.0.0a"
 
-from . import eventsub as eventsub
+from . import (
+    eventsub as eventsub,
+    utils as utils,
+)
 from .clients import Client as Client
