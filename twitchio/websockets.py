@@ -40,6 +40,7 @@ from picows import (
 )
 
 from .backoff import Backoff
+from .enums import TwitchWSCloseCode
 from .exceptions import WebsocketConnectionError, WebsocketException
 from .utils import JSON_LOADS, MISSING
 
@@ -71,12 +72,12 @@ KEEP_ALIVE_GRACE: int = 2
 CLEANUP_TIMEOUT: int = 5
 SOFT_RETRIES: int = 3
 
-FAIL_CODES: tuple[int | WSCloseCode, ...] = (
+FAIL_CODES: tuple[TwitchWSCloseCode | WSCloseCode, ...] = (
     WSCloseCode.PROTOCOL_ERROR,
     WSCloseCode.POLICY_VIOLATION,
-    4001,
-    4002,
-    4003,
+    TwitchWSCloseCode.SENT_INBOUND_TRAFFIC,
+    TwitchWSCloseCode.PING_PONG_FAILED,
+    TwitchWSCloseCode.CONNECTION_UNUSED,
 )
 SOFT_FAIL_CODES: tuple[WSCloseCode, ...] = (
     WSCloseCode.NO_INFO,
@@ -116,6 +117,13 @@ class WebsocketManager:
         return self._sockets.get(session_id)
 
     async def _handle_reconnect(self, socket: Websocket, listener: WebsocketFrame, *, error: Exception | None) -> None:
+        """Attempts to reconnect a Websocket after it's underlying transport was disconnected.
+
+        Certain close codes (fails) are not able to be reconnected and will immediately close and remove the websocket.
+        Other codes (soft fails) will attempt to reconnect for a limited time before hard closing.
+
+        All remaining codes will attempt to reconnect up until the provided reconnect attempts or indefinitely.
+        """
         if socket._closing or listener._close_expected or listener is not socket.listener:
             return
 
@@ -136,18 +144,26 @@ class WebsocketManager:
         await self.reconnect_socket(socket=socket, soft=code in SOFT_FAIL_CODES)
 
     async def resume_socket(self, socket: Websocket, *, url: str) -> None:
-        # TODO: Logging...
+        """A resume is a reconnection that occurs due to a Twitch provided notice.
+
+        The old websocket is kept alive while the new one is connecting so incoming messages can continue to be processed.
+
+        If the new websocket fails to eventually connect, it will be scheduled for reconnection. In this case the original
+        websocket will be forced closed until a new connection is established.
+        """
+        LOGGER.debug("%r is attempting to resume connection.", socket)
 
         try:
             new = await self.open_socket(shard_id=socket.shard_id, url=url)
         except BaseException:
-            # TODO: Logging...
+            LOGGER.debug("%r failed to resume with the provided Twitch URL and will be forced reconnected.", socket)
             return await self.reconnect_socket(socket)
 
         if new.session_id != socket.session_id:
             self._sockets.pop(str(socket.session_id), None)
 
         await socket.close()
+        LOGGER.debug("%r has successfully resumed.", socket)
 
     async def reconnect_socket(self, socket: Websocket, *, soft: bool = False) -> None:
         if not socket.session_id:
@@ -201,12 +217,17 @@ class WebsocketManager:
     async def batch_open(self) -> ...: ...
 
     async def close_socket(self, socket: Websocket) -> ...:
+        """Close a specific websocket and remove it from the manager."""
         await socket.close()
         self._sockets.pop(str(socket.session_id), None)
 
     async def batch_close(self) -> ...: ...
 
     async def shutdown(self) -> None:
+        """Shutdown the Manager and any connected Websocket.
+
+        This method also cancels all currently processing tasks.
+        """
         if self._shutdown:
             return
 
@@ -220,19 +241,19 @@ class WebsocketManager:
 
         # TODO: logging...
 
-    async def _dispatch_notification(self, socket: Websocket, *, data: NotificationMessage, received_at: float) -> None: ...
+    def _dispatch_notification(self, socket: Websocket, *, data: NotificationMessage, received_at: float) -> None: ...
 
-    async def _dispatch_session_reconnect(self, socket: Websocket, *, data: ReconnectMessage, received_at: float) -> ...:
+    async def _dispatch_session_reconnect(self, socket: Websocket, *, data: ReconnectMessage, received_at: float) -> None:
         url = data["payload"]["session"]["reconnect_url"]
         await self.resume_socket(socket, url=url)
 
-    async def _dispatch_session_welcome(self, socket: Websocket, *, data: WelcomeMessage, received_at: float) -> ...:
+    def _dispatch_session_welcome(self, socket: Websocket, *, data: WelcomeMessage, received_at: float) -> None:
         LOGGER.debug("Received 'session_welcome' on %r: %s", socket, data)
 
         socket._session_id = data["payload"]["session"]["id"]
         socket.set_ready()
 
-    async def _dispatch_revocation(self, socket: Websocket, *, data: RevocationMessage, received_at: float) -> ...: ...
+    def _dispatch_revocation(self, socket: Websocket, *, data: RevocationMessage, received_at: float) -> None: ...
 
     async def _process_message(self, socket: Websocket, *, data: tuple[float, Any]) -> None:
         try:
@@ -243,20 +264,27 @@ class WebsocketManager:
             LOGGER.error("Unknown exception processing message in %r: %s. Data: %s", socket, e, data, exc_info=e)
             return
 
-        self._client.dispatcher.publish("raw_socket", payload=message)
+        if self._client._raw_events:
+            self._client.dispatcher.publish("raw_socket", payload=message)
 
         if message_type == "session_keepalive":
             LOGGER.debug("Received 'session_keepalive' on %r: %s", socket, data)
             return
 
-        coro = getattr(self, f"_dispatch_{message_type}", None)
-        if not coro:
+        func = getattr(self, f"_dispatch_{message_type}", None)
+        if not func:
             LOGGER.warning("Unknown message type received for %r: %s", socket, data)
             return
 
-        await coro(socket, data=message, received_at=received)
+        res = func(socket, data=message, received_at=received)
+        if asyncio.iscoroutine(res):
+            await res
 
     async def _socket_channel(self, socket: Websocket, listener: WebsocketFrame) -> None:
+        """Retrieves messages from the Listener queue and processes them accordingly.
+
+        Because of drain/join semantics, once a message has been processed it must be marked as done.
+        """
         messages = listener._messages
 
         while True:
@@ -279,6 +307,11 @@ class WebsocketManager:
 
 
 class WebsocketFrame(WSListener):
+    """Websocket Listener which processes incoming raw messages and stores them in a queue.
+
+    All further message processing is handled outside of the Listener.
+    """
+
     __slots__ = ("_close_code", "_close_expected", "_close_reason", "_messages", "_socket", "_stop_reading")
 
     def __init__(self, socket: Websocket) -> None:
@@ -295,6 +328,11 @@ class WebsocketFrame(WSListener):
         if self._stop_reading:
             return
 
+        if frame.msg_type not in (WSMsgType.TEXT, WSMsgType.CLOSE):
+            return
+
+        self._socket.ack()
+
         if frame.msg_type is WSMsgType.TEXT:
             try:
                 data = JSON_LOADS(frame.get_payload_as_bytes())
@@ -307,18 +345,12 @@ class WebsocketFrame(WSListener):
             except asyncio.QueueShutDown:
                 return
 
-            self._socket.ack()
-            return
-
-        if frame.msg_type is not WSMsgType.CLOSE:
             return
 
         self._close_code = frame.get_close_code()
         self._close_reason = frame.get_close_reason()
-
-        LOGGER.debug("%r received CLOSE %s: %s", self._socket, self._close_code, self._close_reason)
         self._stop_reading = True
-        self._socket.ack()
+        LOGGER.debug("%r received CLOSE %s: %s", self._socket, self._close_code, self._close_reason)
 
 
 class Websocket:
@@ -389,6 +421,10 @@ class Websocket:
         return bool(self.transport and not self.transport.is_disconnected)
 
     @property
+    def is_conduit(self) -> bool:
+        return self._shard_id is not None
+
+    @property
     def last_ack(self) -> float:
         return self._last_ack
 
@@ -400,6 +436,11 @@ class Websocket:
         return WebsocketFrame(self)
 
     async def open(self, *, uri: str = MISSING, keepalive: int = MIN_KEEP_ALIVE) -> None:
+        """Attempts to connect to Twitch or the provided URI (in case of CLI or Debugging).
+
+        Note this does not do any Welcome Session logic and assumes control of the connection only;
+        this is managed on the WebsocketManager.
+        """
         if self._closing or self._opening:
             # TODO: Error?
             return
@@ -431,6 +472,13 @@ class Websocket:
         self._start_background_tasks()
 
     async def close(self, *, code: WSCloseCode = WSCloseCode.OK, force: bool = False) -> None:
+        """Attempts to gracefully close and cleanup the websocket.
+
+        All websockets, including ones scheduled to resume are one-shot. They cannot be, and should not be attempted to be
+        re-used after a successful closure.
+
+        When force is True, don't allow the current websocket to process any remaining messages stored.
+        """
         if self._closing:
             return
 
@@ -464,6 +512,7 @@ class Websocket:
         LOGGER.debug("%r has successfully closed and disconnected.", self)
 
     async def _cleanup_transport(self, code: WSCloseCode) -> None:
+        """Close and wait for the underlying transport to be disconnected with the set timeout."""
         assert self.transport
         self.transport.send_close(code)
         self.transport.disconnect()
@@ -475,6 +524,7 @@ class Websocket:
             pass
 
     def cleanup(self) -> None:
+        """Cleanup the websocket by removing most state and cancelling currently running background tasks."""
         current = asyncio.current_task()
 
         for task in (self._channel_task, self._watcher_task, self._keepalive_task):
@@ -491,12 +541,15 @@ class Websocket:
         self._closing = False
 
     async def drain(self, listener: WebsocketFrame, *, immediate: bool = False) -> None:
+        """Prevents the websocket from storing anymore messages and allows any current messages to be processed
+        before closure.
+
+        If immediate=True, any current message stored will be removed and won't be processed.
+        """
         listener._messages.shutdown(immediate=immediate)
 
         async with asyncio.timeout(CLEANUP_TIMEOUT):
             await listener._messages.join()
-
-    async def resume(self) -> None: ...
 
     def _start_background_tasks(self) -> None:
         if self._channel_task or self._watcher_task or self._keepalive_task:
@@ -510,6 +563,8 @@ class Websocket:
         self._keepalive_task = asyncio.create_task(self._keepalive_watcher())
 
     async def _watcher(self, listener: WebsocketFrame) -> None:
+        """Watches for transport disconnect and triggers a reconnection flow when the disconnection
+        was not expected E.g. .close() was not called."""
         assert self.transport and self.listener
         error: Exception | None = None
 
@@ -531,6 +586,12 @@ class Websocket:
         task.add_done_callback(self.manager._tasks.discard)
 
     async def _keepalive_watcher(self) -> None:
+        """Keeps track of the last time a websocket received a message and closes the underlying transport
+        when the keepalive is exceeded.
+
+        A reconnect flow will be triggered after the transport has disconnected, unless the websocket was closed during
+        that time.
+        """
         timeout = self._keepalive + KEEP_ALIVE_GRACE
 
         while True:
@@ -550,11 +611,21 @@ class Websocket:
             return
 
     def ack(self) -> None:
+        """Methods that updates the last time the websocket received a message."""
         self._last_ack = time.monotonic()
 
     def set_ready(self) -> None:
+        """Method which sets the ready status of the Websocket. This wakes any consumers of wait_for_ready.'"""
         self._ready_event.set()
 
     async def wait_for_ready(self) -> None:
+        """Coroutine method which waits up to the provided keepalive duration for the websocket
+        to receive a Welcome Session from Twitch.
+
+        Raises
+        ------
+        TimeoutError
+            Did not receive a Welcome Session within the provided timeframe.
+        """
         async with asyncio.timeout(self._keepalive):
             await self._ready_event.wait()
