@@ -27,5 +27,5 @@ from typing import TypedDict
 # TODO: Discuss names of options...
 
 
-class ClientOptionsT(TypedDict):
+class ClientOptionsT(TypedDict, total=False):
     enable_raw_events: bool
