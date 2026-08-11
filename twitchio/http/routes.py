@@ -25,67 +25,115 @@ from __future__ import annotations
 
 import copy
 import urllib.parse
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, Unpack
 
 from ..exceptions import *
 from ..utils import MISSING
 
 
 if TYPE_CHECKING:
-    from ..types_.http import HTTPMethodT, ParamMappingT
+    from ..types_.http import APIRequestKwargs, HTTPMethodT, ParamMappingT
+    from .clients import HTTPClient
 
 
 class Route:
-    API_URL: ClassVar[str] = "https://api.twitch.tv/helix/"
-    ID_URL: ClassVar[str] = "https://id.twitch.tv/"
+    """Route class used by TwitchIO to prepare HTTP requests to Twitch.
 
-    method: HTTPMethodT
+    .. warning::
+
+        You should not change or instantiate this class manually, as it is used internally.
+
+    Attributes
+    ----------
+    params: dict[str, Any]
+        A mapping of parameters used in the request.
+    json: dict[Any, Any]
+        The JSON used in the body of the request. Could be an empty :class:`dict`.
+    headers: dict[str, str]
+        The headers used in the request.
+    token_for: str
+        The User ID that was used to gather a token for authentication. Could be an empty :class:`str`.
+    method: Literal['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD', 'CONNECT', 'TRACE']
+        The request method used.
     path: str
+        The API endpoint requested.
+    """
+
+    __slots__ = (
+        "_base_url",
+        "_url",
+        "data",
+        "headers",
+        "json",
+        "method",
+        "no_app",
+        "packed",
+        "params",
+        "path",
+        "token_for",
+        "use_id",
+    )
+
+    BASE: ClassVar[str] = "https://api.twitch.tv/helix/"
+    ID_BASE: ClassVar[str] = "https://id.twitch.tv/"
 
     def __init__(
         self,
+        method: HTTPMethodT,
         path: str,
-        /,
-        method: HTTPMethodT = MISSING,
-        cli: bool = False,
-        url: str | None = None,
+        *,
         use_id: bool = False,
-        params: ParamMappingT | None = None,
-        data: ... = None,  # TODO: ...
+        no_app: bool = False,
+        **kwargs: Unpack[APIRequestKwargs],
     ) -> None:
-        self._path = path
-        self._method = method if method is not MISSING else "GET"
-        self._cli = cli
+        self.params: ParamMappingT = kwargs.pop("params", {})
+        self.json: Any = kwargs.get("json", {})
+        self.headers: dict[str, str] = kwargs.get("headers", {})
+        self.token_for: str = str(kwargs.get("token_for", ""))
+        self.no_app = no_app
 
-        if cli and not url:
-            raise MissingCLIParamError("Excpected the 'url' parameter when 'cli' is set.")
+        self.use_id = use_id
+        self.method = method
+        self.path = path
 
-        self._is_id = use_id
-        self._base_url = url or (self.ID_URL if use_id else self.API_URL)
-        self._params = params
-
-        self._data = data  # TODO: ...
-        self._url: str | None = self.format_url()
+        self._base_url: str = ""
+        self._url: str = self.build_url(duplicate_key=not use_id)
 
     def __str__(self) -> str:
-        return self._path
+        return str(self._url)
 
     def __repr__(self) -> str:
-        return f"Route(method={self._method}, url={self._url}, cli={self._cli})"
+        return f"{self.method}[{self.base_url}]"
 
-    @property
-    def cli(self) -> bool:
-        return self._cli
+    def build_url(self, *, remove_none: bool = True, duplicate_key: bool = True) -> str:
+        base = self.ID_BASE if self.use_id else self.BASE
+        self.path = self.path.lstrip("/").rstrip("/")
 
-    debug = cli
+        url: str = f"{base}{self.path}"
+        self._base_url = url
 
-    @property
-    def is_id(self) -> bool:
-        return self._is_id
+        if not self.params:
+            return url
 
-    @property
-    def url(self) -> str | None:
-        self._url
+        url += "?"
+
+        # We expect a dict so keys should be unique...
+        for key, value in copy.copy(self.params).items():
+            if value is None:
+                if remove_none:
+                    del self.params[key]
+                continue
+
+            if isinstance(value, (str, int)):
+                url += f"{key}={self.encode(str(value), safe='+', plus=True)}&"
+            elif duplicate_key:
+                for v in value:
+                    url += f"{key}={self.encode(str(v), safe='+', plus=True)}&"
+            else:
+                joined: str = "+".join([self.encode(str(v), safe="+") for v in value])
+                url += f"{key}={joined}&"
+
+        return url.rstrip("&")
 
     @classmethod
     def encode(cls, value: str, /, safe: str = "", plus: bool = False) -> str:
@@ -94,29 +142,55 @@ class Route:
 
         return method(value, safe=safe) if unquote(value) == value else value
 
-    def format_url(self, *, remove_none: bool = False, duplicates: bool = True) -> str:
-        self._path = self._path.lstrip("/").rstrip("/").strip()
-        url = f"{self._base_url}{self._path}"
+    @property
+    def url(self) -> str:
+        """Property returning the URL used to make a request. Could include query parameters."""
+        return self._url
 
-        if not self._params:
-            return url
+    @property
+    def base_url(self) -> str:
+        """Property returning the URL used to make a request without query parameters."""
+        return self._base_url
 
-        url += "?"
+    def update_params(self, params: ParamMappingT, *, remove_none: bool = True) -> str:
+        self.params.update(params)
+        self._url = self.build_url(remove_none=remove_none)
 
-        # We expect a dict so keys should be unique...
-        for key, value in copy.copy(self._params).items():
-            if value is None:
-                if remove_none:
-                    del self._params[key]
-                continue
+        return self.url
 
-            if isinstance(value, str | int):
-                url += f"{key}={self.encode(str(value), safe='+', plus=True)}&"
-            elif duplicates:
-                for v in value:
-                    url += f"{key}={self.encode(str(v), safe='+', plus=True)}&"
-            else:
-                joined: str = "+".join([self.encode(str(v), safe="+") for v in value])
-                url += f"{key}={joined}&"
+    def update_headers(self, headers: dict[str, str]) -> None:
+        self.headers.update(headers)
 
-        return url.rstrip("&")
+    def clear_auth(self) -> None:
+        self.headers.pop("Authorization", "")
+
+
+class RequestManager:
+    def __init__(self, client: HTTPClient, /, app_token: str = MISSING, prefers_user: bool = False) -> None:
+        self._client = client
+        self._app_token = app_token
+        self._prefers_user = prefers_user
+        self._tokens: dict[str, str] = {}
+
+    def update_route(self, route: Route, /, extras: dict[str, Any]) -> None:
+        headers = extras
+        token: str | None = headers.get("Authorization")
+        no_app = route.no_app
+
+        if route.token_for and not token:
+            token = self._tokens.get(route.token_for, self._app_token)
+
+        elif no_app or self._prefers_user:
+            moderator = route.params.get("moderator_id", "")
+            broadcaster = route.params.get("broadcaster_id", "")
+
+            token = self._tokens.get(moderator) if moderator else self._tokens.get(broadcaster)
+
+        if not token and not no_app:
+            token = self._app_token
+
+        if not token or token is MISSING:
+            raise MissingTokenError("No valid token available for this request.")
+
+        headers.update({"Authorization": token})
+        route.update_headers(headers)
