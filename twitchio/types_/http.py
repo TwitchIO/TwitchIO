@@ -22,8 +22,22 @@ SOFTWARE.
 """
 
 from collections.abc import MutableMapping
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
 
 type HTTPMethodT = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD", "CONNECT", "TRACE"]
 type ParamMappingT = MutableMapping[str, Any]
+
+
+class APIRequestKwargs(TypedDict, total=False):
+    headers: dict[str, str]
+    data: dict[str, Any]
+    params: ParamMappingT
+    json: Any
+    token_for: Any  # TODO
+
+
+class APIRequest(TypedDict, total=False):
+    headers: dict[str, str]
+    data: dict[str, Any]
+    json: Any
