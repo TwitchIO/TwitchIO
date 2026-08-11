@@ -23,27 +23,107 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import asyncio
+import logging
+import sys
+from functools import cached_property
+
+import aiohttp
+
+from twitchio import __version__
+
 from ..exceptions import *
+from ..utils import MISSING
+from .routes import RequestManager, Route
+
+
+LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 class HTTPClient:
-    def __init__(self) -> None: ...
+    def __init__(self, *, session: aiohttp.ClientSession = MISSING, client_id: str) -> None:
+        self._session = session
+        self._client_id = client_id
+        self._manager = RequestManager(self)
+        self._has_setup: bool = False
 
-    async def setup(self) -> ...: ...
+        pyver = f"{sys.version_info[0]}.{sys.version_info[1]}"
+        ua = "TwitchioClient (https://github.com/TwitchIO/TwitchIO {0}) Python/{1} aiohttp/{2}"
+        self.user_agent: str = ua.format(__version__, pyver, aiohttp.__version__)
+
+    @cached_property
+    def headers(self) -> dict[str, str]:
+        return {"User-Agent": self.user_agent, "Client-ID": str(self._client_id)}
+
+    async def setup(self) -> None:
+        if self._has_setup:
+            return
+
+        self._has_setup = True
+
+        if self._session is not MISSING:
+            return
+
+        self._session = aiohttp.ClientSession(headers=self.headers)
+        LOGGER.debug("Completed setup for %s.", type(self).__qualname__)
 
     def cleanup(self) -> ...: ...
 
     async def close(self) -> ...: ...
 
-    async def request(self) -> ...: ...
+    async def request(self, route: Route) -> str | None:
+        failed = False
 
-    async def request_json(self) -> ...: ...
+        if not self._has_setup:
+            await self.setup()
+
+        self._manager.update_route(route, extras=self.headers)
+
+        while True:
+            method = route.method
+            url = route.url
+
+            try:
+                async with self._session.request(method, url, headers=route.headers, json=route.json or None) as resp:
+                    status = resp.status
+
+                    if status == 204:
+                        return
+                    elif 200 <= status < 300:
+                        return await resp.text()
+
+                    if status == 503:
+                        if failed:
+                            raise  # TODO: ...
+
+                        failed = True
+                        await asyncio.sleep(3)
+                        continue
+
+                    if status == 429:
+                        # TODO ...
+                        ...
+
+                    if status == 401:
+                        # TODO: ...
+                        ...
+            except BaseException:
+                if failed:
+                    # TODO: ...
+                    raise
+
+                failed = True
+                await asyncio.sleep(3)
+
+    async def request_json(self, route: Route) -> ...: ...
+
+    async def request_paginated(self, route: Route, *, type: ..., nested_key: str = MISSING) -> ...:
+        while True:
+            await self.request_json(route)
 
     async def request_asset_head(self) -> ...: ...
 
     async def request_asset(self) -> ...: ...
-
-    async def request_paginated(self) -> ...: ...
 
     # -- Ads --
     async def start_commercial(self) -> ...: ...
