@@ -201,8 +201,8 @@ class StartCommercialResponseData(TypedDict):
     retry_after: int
 
 
-class StartCommercialResponse(TypedDict):
-    data: list[StartCommercialResponseData]
+class StartCommercialResponse(Payload[StartCommercialResponseData]):
+    pass
 
 
 class AdScheduleResponseData(TypedDict):
@@ -214,8 +214,8 @@ class AdScheduleResponseData(TypedDict):
     preroll_free_time: int
 
 
-class AdScheduleResponse(TypedDict):
-    data: list[AdScheduleResponseData]
+class AdScheduleResponse(Payload[AdScheduleResponseData]):
+    pass
 
 
 class SnoozeNextAdResponseData(TypedDict):
@@ -224,8 +224,8 @@ class SnoozeNextAdResponseData(TypedDict):
     next_ad_at: str
 
 
-class SnoozeNextAdResponse(TypedDict):
-    data: list[SnoozeNextAdResponseData]
+class SnoozeNextAdResponse(Payload[SnoozeNextAdResponseData]):
+    pass
 
 
 class ExtensionAnalyticsResponseData(TypedDict):
@@ -235,8 +235,7 @@ class ExtensionAnalyticsResponseData(TypedDict):
     date_range: DateRange
 
 
-class ExtensionAnalyticsResponse(TypedDict):
-    data: list[ExtensionAnalyticsResponseData]
+class ExtensionAnalyticsResponse(Payload[ExtensionAnalyticsResponseData]):
     pagination: Pagination
 
 
@@ -247,8 +246,7 @@ class GameAnalyticsResponseData(TypedDict):
     date_range: DateRange
 
 
-class GameAnalyticsResponse(TypedDict):
-    data: list[GameAnalyticsResponseData]
+class GameAnalyticsResponse(Payload[GameAnalyticsResponseData]):
     pagination: Pagination
 
 
@@ -260,8 +258,7 @@ class BitsLeaderboardResponseData(TypedDict):
     score: int
 
 
-class BitsLeaderboardResponse(TypedDict):
-    data: list[BitsLeaderboardResponseData]
+class BitsLeaderboardResponse(Payload[BitsLeaderboardResponseData]):
     date_range: DateRange
     total: int
 
@@ -284,8 +281,8 @@ class CheermotesResponseData(TypedDict):
     is_charitable: bool
 
 
-class CheermotesResponse(TypedDict):
-    data: list[CheermotesResponseData]
+class CheermotesResponse(Payload[CheermotesResponseData]):
+    pass
 
 
 class ExtensionTransactionsResponseCost(TypedDict):
@@ -316,8 +313,7 @@ class ExtensionTransactionsResponseData(TypedDict):
     product_data: ExtensionTransactionsResponseProductData
 
 
-class ExtensionTransactionsResponse(TypedDict):
-    data: list[ExtensionTransactionsResponseData]
+class ExtensionTransactionsResponse(Payload[ExtensionTransactionsResponseData]):
     pagination: Pagination
 
 
@@ -335,8 +331,8 @@ class ChannelInformationResponseData(TypedDict):
     is_branded_content: bool
 
 
-class ChannelInformationResponse(TypedDict):
-    data: list[ChannelInformationResponseData]
+class ChannelInformationResponse(Payload[ChannelInformationResponseData]):
+    pass
 
 
 class ChannelEditorsResponseData(TypedDict):
@@ -345,8 +341,8 @@ class ChannelEditorsResponseData(TypedDict):
     created_at: str
 
 
-class ChannelEditorsResponse(TypedDict):
-    data: list[ChannelEditorsResponseData]
+class ChannelEditorsResponse(Payload[ChannelEditorsResponseData]):
+    pass
 
 
 class FollowedChannelsResponseData(TypedDict):
@@ -356,8 +352,7 @@ class FollowedChannelsResponseData(TypedDict):
     followed_at: str
 
 
-class FollowedChannelsResponse(TypedDict):
-    data: list[FollowedChannelsResponseData]
+class FollowedChannelsResponse(Payload[FollowedChannelsResponseData]):
     pagination: Pagination
     total: int
 
@@ -369,8 +364,7 @@ class ChannelFollowersResponseData(TypedDict):
     user_name: str
 
 
-class ChannelFollowersResponse(TypedDict):
-    data: list[ChannelFollowersResponseData]
+class ChannelFollowersResponse(Payload[ChannelFollowersResponseData]):
     pagination: Pagination
     total: int
 
@@ -403,8 +397,8 @@ class CustomPowerupResponseData(TypedDict):
     cooldown_expires_at: str | None
 
 
-class CustomPowerupResponse(TypedDict):
-    data: list[CustomPowerupResponseData]
+class CustomPowerupResponse(Payload[CustomPowerupResponseData]):
+    pass
 
 
 class CustomRewardsResponseImage(_ImageUrlSizes): ...
@@ -445,8 +439,8 @@ class CustomRewardsResponseData(TypedDict):
     cooldown_expires_at: str | None
 
 
-class CustomRewardsResponse(TypedDict):
-    data: list[CustomRewardsResponseData]
+class CustomRewardsResponse(Payload[CustomRewardsResponseData]):
+    pass
 
 
 class CustomRewardRedemptionResponseReward(TypedDict):
@@ -470,8 +464,8 @@ class CustomRewardRedemptionResponseData(TypedDict):
     reward: CustomRewardRedemptionResponseReward
 
 
-class CustomRewardRedemptionResponse(TypedDict):
-    data: list[CustomRewardRedemptionResponseData]
+class CustomRewardRedemptionResponse(Payload[CustomRewardRedemptionResponseData]):
+    pass
 
 
 class CharityCampaignResponseCurrentAmount(TypedDict):
@@ -499,8 +493,8 @@ class CharityCampaignResponseData(TypedDict):
     target_amount: CharityCampaignResponseTargetAmount | None
 
 
-class CharityCampaignResponse(TypedDict):
-    data: list[CharityCampaignResponseData]
+class CharityCampaignResponse(Payload[CharityCampaignResponseData]):
+    pass
 
 
 class CharityCampaignDonationsResponseAmount(TypedDict):
@@ -518,8 +512,7 @@ class CharityCampaignDonationsResponseData(TypedDict):
     amount: CharityCampaignDonationsResponseAmount
 
 
-class CharityCampaignDonationsResponse(TypedDict):
-    data: list[CharityCampaignDonationsResponseData]
+class CharityCampaignDonationsResponse(Payload[CharityCampaignDonationsResponseData]):
     pagination: Pagination
 
 
@@ -529,8 +522,7 @@ class ChattersResponseData(TypedDict):
     user_name: str
 
 
-class ChattersResponse(TypedDict):
-    data: list[ChattersResponseData]
+class ChattersResponse(Payload[ChattersResponseData]):
     pagination: Pagination
     total: int
 
@@ -550,8 +542,7 @@ class ChannelEmotesResponseData(TypedDict):
     theme_mode: list[str]
 
 
-class ChannelEmotesResponse(TypedDict):
-    data: list[ChannelEmotesResponseData]
+class ChannelEmotesResponse(Payload[ChannelEmotesResponseData]):
     template: str
 
 
@@ -567,8 +558,7 @@ class GlobalEmotesResponseData(TypedDict):
     theme_mode: list[str]
 
 
-class GlobalEmotesResponse(TypedDict):
-    data: list[GlobalEmotesResponseData]
+class GlobalEmotesResponse(Payload[GlobalEmotesResponseData]):
     template: str
 
 
@@ -587,8 +577,7 @@ class EmoteSetsResponseData(TypedDict):
     theme_mode: list[str]
 
 
-class EmoteSetsResponse(TypedDict):
-    data: list[EmoteSetsResponseData]
+class EmoteSetsResponse(Payload[EmoteSetsResponseData]):
     template: str
 
 
@@ -608,8 +597,8 @@ class ChannelChatBadgesResponseData(TypedDict):
     versions: list[ChannelChatBadgesResponseVersions]
 
 
-class ChannelChatBadgesResponse(TypedDict):
-    data: list[ChannelChatBadgesResponseData]
+class ChannelChatBadgesResponse(Payload[ChannelChatBadgesResponseData]):
+    pass
 
 
 class GlobalChatBadgesResponseVersions(TypedDict):
@@ -628,8 +617,8 @@ class GlobalChatBadgesResponseData(TypedDict):
     versions: list[GlobalChatBadgesResponseVersions]
 
 
-class GlobalChatBadgesResponse(TypedDict):
-    data: list[GlobalChatBadgesResponseData]
+class GlobalChatBadgesResponse(Payload[GlobalChatBadgesResponseData]):
+    pass
 
 
 class ChatSettingsResponseData(TypedDict):
@@ -646,8 +635,8 @@ class ChatSettingsResponseData(TypedDict):
     unique_chat_mode: bool
 
 
-class ChatSettingsResponse(TypedDict):
-    data: list[ChatSettingsResponseData]
+class ChatSettingsResponse(Payload[ChatSettingsResponseData]):
+    pass
 
 
 class SharedChatParticipantsData(TypedDict):
@@ -662,8 +651,8 @@ class SharedChatSessionResponseData(TypedDict):
     updated_at: str
 
 
-class SharedChatSessionResponse(TypedDict):
-    data: list[SharedChatSessionResponseData]
+class SharedChatSessionResponse(Payload[SharedChatSessionResponseData]):
+    pass
 
 
 class UserEmotesResponseData(TypedDict):
@@ -677,8 +666,7 @@ class UserEmotesResponseData(TypedDict):
     theme_mode: list[str]
 
 
-class UserEmotesResponse(TypedDict):
-    data: list[UserEmotesResponseData]
+class UserEmotesResponse(Payload[UserEmotesResponseData]):
     template: str
     pagination: Pagination
 
@@ -694,8 +682,8 @@ class SendChatMessageResponseData(TypedDict):
     drop_reason: SendChatMessageResponseDropReason | None
 
 
-class SendChatMessageResponse(TypedDict):
-    data: list[SendChatMessageResponseData]
+class SendChatMessageResponse(Payload[SendChatMessageResponseData]):
+    pass
 
 
 class UserChatColorResponseData(TypedDict):
@@ -705,8 +693,8 @@ class UserChatColorResponseData(TypedDict):
     color: str
 
 
-class UserChatColorResponse(TypedDict):
-    data: list[UserChatColorResponseData]
+class UserChatColorResponse(Payload[UserChatColorResponseData]):
+    pass
 
 
 class CreateClipResponseData(TypedDict):
@@ -714,8 +702,8 @@ class CreateClipResponseData(TypedDict):
     id: str
 
 
-class CreateClipResponse(TypedDict):
-    data: list[CreateClipResponseData]
+class CreateClipResponse(Payload[CreateClipResponseData]):
+    pass
 
 
 class ClipsResponseData(TypedDict):
@@ -738,17 +726,16 @@ class ClipsResponseData(TypedDict):
     is_featured: bool
 
 
-class ClipsResponse(TypedDict):
-    data: list[ClipsResponseData]
+class ClipsResponse(Payload[ClipsResponseData]):
     pagination: Pagination
 
 
-class ConduitPayload(TypedDict):
-    data: list[ConduitData]
+class ConduitPayload(Payload[ConduitData]):
+    pass
 
 
-class ShardPayload(TypedDict):
-    data: list[ShardData]
+class ShardPayload(Payload[ShardData]):
+    pass
 
 
 class ContentClassificationLabelData(TypedDict):
@@ -757,8 +744,8 @@ class ContentClassificationLabelData(TypedDict):
     name: str
 
 
-class ContentClassificationLabelsResponse(TypedDict):
-    data: list[ContentClassificationLabelData]
+class ContentClassificationLabelsResponse(Payload[ContentClassificationLabelData]):
+    pass
 
 
 class DropsEntitlementsResponseData(TypedDict):
@@ -771,8 +758,7 @@ class DropsEntitlementsResponseData(TypedDict):
     last_updated: str
 
 
-class DropsEntitlementsResponse(TypedDict):
-    data: list[DropsEntitlementsResponseData]
+class DropsEntitlementsResponse(Payload[DropsEntitlementsResponseData]):
     pagination: Pagination
 
 
@@ -781,8 +767,8 @@ class UpdateDropsEntitlementsResponseData(TypedDict):
     ids: list[str]
 
 
-class UpdateDropsEntitlementsResponse(TypedDict):
-    data: list[UpdateDropsEntitlementsResponseData]
+class UpdateDropsEntitlementsResponse(Payload[UpdateDropsEntitlementsResponseData]):
+    pass
 
 
 class ExtensionConfigurationSegmentResponseData(TypedDict):
@@ -792,8 +778,8 @@ class ExtensionConfigurationSegmentResponseData(TypedDict):
     version: str
 
 
-class ExtensionConfigurationSegmentResponse(TypedDict):
-    data: list[ExtensionConfigurationSegmentResponseData]
+class ExtensionConfigurationSegmentResponse(Payload[ExtensionConfigurationSegmentResponseData]):
+    pass
 
 
 class ExtensionLiveChannelsResponseData(TypedDict):
@@ -804,8 +790,7 @@ class ExtensionLiveChannelsResponseData(TypedDict):
     title: str
 
 
-class ExtensionLiveChannelsResponse(TypedDict):
-    data: list[ExtensionLiveChannelsResponseData]
+class ExtensionLiveChannelsResponse(Payload[ExtensionLiveChannelsResponseData]):
     pagination: Pagination
 
 
@@ -820,8 +805,8 @@ class ExtensionSecretsResponseData(TypedDict):
     secrets: list[ExtensionSecretsResponseSecrets]
 
 
-class ExtensionSecretsResponse(TypedDict):
-    data: list[ExtensionSecretsResponseData]
+class ExtensionSecretsResponse(Payload[ExtensionSecretsResponseData]):
+    pass
 
 
 class CreateExtensionSecretResponseSecrets(TypedDict):
@@ -835,8 +820,8 @@ class CreateExtensionSecretResponseData(TypedDict):
     secrets: list[CreateExtensionSecretResponseSecrets]
 
 
-class CreateExtensionSecretResponse(TypedDict):
-    data: list[CreateExtensionSecretResponseData]
+class CreateExtensionSecretResponse(Payload[CreateExtensionSecretResponseData]):
+    pass
 
 
 class ExtensionsResponseMobile(TypedDict):
@@ -903,8 +888,8 @@ class ExtensionsResponseData(TypedDict):
     allowlisted_panel_urls: list[str]
 
 
-class ExtensionsResponse(TypedDict):
-    data: list[ExtensionsResponseData]
+class ExtensionsResponse(Payload[ExtensionsResponseData]):
+    pass
 
 
 class ReleasedExtensionsResponseMobile(TypedDict):
@@ -971,8 +956,8 @@ class ReleasedExtensionsResponseData(TypedDict):
     allowlisted_panel_urls: list[str]
 
 
-class ReleasedExtensionsResponse(TypedDict):
-    data: list[ReleasedExtensionsResponseData]
+class ReleasedExtensionsResponse(Payload[ReleasedExtensionsResponseData]):
+    pass
 
 
 class ExtensionBitsProductsResponseCost(TypedDict):
@@ -989,8 +974,8 @@ class ExtensionBitsProductsResponseData(TypedDict):
     is_broadcast: bool
 
 
-class ExtensionBitsProductsResponse(TypedDict):
-    data: list[ExtensionBitsProductsResponseData]
+class ExtensionBitsProductsResponse(Payload[ExtensionBitsProductsResponseData]):
+    pass
 
 
 class UpdateExtensionBitsProductResponseCost(TypedDict):
@@ -1007,8 +992,8 @@ class UpdateExtensionBitsProductResponseData(TypedDict):
     is_broadcast: bool
 
 
-class UpdateExtensionBitsProductResponse(TypedDict):
-    data: list[UpdateExtensionBitsProductResponseData]
+class UpdateExtensionBitsProductResponse(Payload[UpdateExtensionBitsProductResponseData]):
+    pass
 
 
 class EventsubTransportData(TypedDict):
@@ -1047,8 +1032,7 @@ class EventsubSubscriptionResponseData(TypedDict):
     transport: EventsubTransportData
 
 
-class EventsubSubscriptionResponse(TypedDict):
-    data: list[EventsubSubscriptionResponseData]
+class EventsubSubscriptionResponse(Payload[EventsubSubscriptionResponseData]):
     total: int
     total_cost: int
     max_total_cost: int
@@ -1062,8 +1046,7 @@ class TopGamesResponseData(TypedDict):
     igdb_id: str
 
 
-class TopGamesResponse(TypedDict):
-    data: list[TopGamesResponseData]
+class TopGamesResponse(Payload[TopGamesResponseData]):
     pagination: Pagination
 
 
@@ -1074,8 +1057,8 @@ class GamesResponseData(TypedDict):
     igdb_id: str
 
 
-class GamesResponse(TypedDict):
-    data: list[GamesResponseData]
+class GamesResponse(Payload[GamesResponseData]):
+    pass
 
 
 class CreatorGoalsResponseData(TypedDict):
@@ -1098,8 +1081,8 @@ class CreatorGoalsResponseData(TypedDict):
     created_at: str
 
 
-class CreatorGoalsResponse(TypedDict):
-    data: list[CreatorGoalsResponseData]
+class CreatorGoalsResponse(Payload[CreatorGoalsResponseData]):
+    pass
 
 
 class ChannelGuestStarSettingsResponse(TypedDict):
@@ -1151,8 +1134,7 @@ class HypeTrainEventsResponseData(TypedDict):
     event_data: HypeTrainEventsResponseEventData
 
 
-class HypeTrainEventsResponse(TypedDict):
-    data: list[HypeTrainEventsResponseData]
+class HypeTrainEventsResponse(Payload[HypeTrainEventsResponseData]):
     pagination: Pagination
 
 
@@ -1199,8 +1181,8 @@ class HypeTrainStatusResponseData(TypedDict):
     shared_all_time_high: HypeTrainStatusAllTimeHighData | None
 
 
-class HypeTrainStatusResponse(TypedDict):
-    data: list[HypeTrainStatusResponseData]
+class HypeTrainStatusResponse(Payload[HypeTrainStatusResponseData]):
+    pass
 
 
 class CheckAutomodStatusResponseData(TypedDict):
@@ -1208,8 +1190,8 @@ class CheckAutomodStatusResponseData(TypedDict):
     is_permitted: bool
 
 
-class CheckAutomodStatusResponse(TypedDict):
-    data: list[CheckAutomodStatusResponseData]
+class CheckAutomodStatusResponse(Payload[CheckAutomodStatusResponseData]):
+    pass
 
 
 class AutomodSettingsResponseData(TypedDict):
@@ -1226,8 +1208,8 @@ class AutomodSettingsResponseData(TypedDict):
     sex_based_terms: int
 
 
-class AutomodSettingsResponse(TypedDict):
-    data: list[AutomodSettingsResponseData]
+class AutomodSettingsResponse(Payload[AutomodSettingsResponseData]):
+    pass
 
 
 class UpdateAutomodSettingsResponseData(TypedDict):
@@ -1244,8 +1226,8 @@ class UpdateAutomodSettingsResponseData(TypedDict):
     sex_based_terms: int
 
 
-class UpdateAutomodSettingsResponse(TypedDict):
-    data: list[UpdateAutomodSettingsResponseData]
+class UpdateAutomodSettingsResponse(Payload[UpdateAutomodSettingsResponseData]):
+    pass
 
 
 class BannedUsersResponseData(TypedDict):
@@ -1260,8 +1242,7 @@ class BannedUsersResponseData(TypedDict):
     moderator_name: str
 
 
-class BannedUsersResponse(TypedDict):
-    data: list[BannedUsersResponseData]
+class BannedUsersResponse(Payload[BannedUsersResponseData]):
     pagination: Pagination
 
 
@@ -1273,8 +1254,8 @@ class BanUserResponseData(TypedDict):
     end_time: str | None
 
 
-class BanUserResponse(TypedDict):
-    data: list[BanUserResponseData]
+class BanUserResponse(Payload[BanUserResponseData]):
+    pass
 
 
 class UnbanRequestsResponseData(TypedDict):
@@ -1295,8 +1276,7 @@ class UnbanRequestsResponseData(TypedDict):
     resolution_text: str
 
 
-class UnbanRequestsResponse(TypedDict):
-    data: list[UnbanRequestsResponseData]
+class UnbanRequestsResponse(Payload[UnbanRequestsResponseData]):
     pagination: Pagination
 
 
@@ -1318,8 +1298,8 @@ class ResolveUnbanRequestsResponseData(TypedDict):
     resolution_text: str
 
 
-class ResolveUnbanRequestsResponse(TypedDict):
-    data: list[ResolveUnbanRequestsResponseData]
+class ResolveUnbanRequestsResponse(Payload[ResolveUnbanRequestsResponseData]):
+    pass
 
 
 class BlockedTermsResponseData(TypedDict):
@@ -1332,13 +1312,12 @@ class BlockedTermsResponseData(TypedDict):
     expires_at: str | None
 
 
-class BlockedTermsResponse(TypedDict):
-    data: list[BlockedTermsResponseData]
+class BlockedTermsResponse(Payload[BlockedTermsResponseData]):
     pagination: Pagination
 
 
-class AddBlockedTermResponse(TypedDict):
-    data: list[BlockedTermsResponseData]
+class AddBlockedTermResponse(Payload[BlockedTermsResponseData]):
+    pass
 
 
 class ModeratedChannelsResponseData(TypedDict):
@@ -1347,8 +1326,7 @@ class ModeratedChannelsResponseData(TypedDict):
     broadcaster_name: str
 
 
-class ModeratedChannelsResponse(TypedDict):
-    data: list[ModeratedChannelsResponseData]
+class ModeratedChannelsResponse(Payload[ModeratedChannelsResponseData]):
     pagination: Pagination
 
 
@@ -1358,8 +1336,7 @@ class ModeratorsResponseData(TypedDict):
     user_name: str
 
 
-class ModeratorsResponse(TypedDict):
-    data: list[ModeratorsResponseData]
+class ModeratorsResponse(Payload[ModeratorsResponseData]):
     pagination: Pagination
 
 
@@ -1369,8 +1346,7 @@ class VipsResponseData(TypedDict):
     user_login: str
 
 
-class VipsResponse(TypedDict):
-    data: list[VipsResponseData]
+class VipsResponse(Payload[VipsResponseData]):
     pagination: Pagination
 
 
@@ -1382,12 +1358,12 @@ class ShieldModeStatusResponseData(TypedDict):
     last_activated_at: str
 
 
-class UpdateShieldModeStatusResponse(TypedDict):
-    data: list[ShieldModeStatusResponseData]
+class UpdateShieldModeStatusResponse(Payload[ShieldModeStatusResponseData]):
+    pass
 
 
-class ShieldModeStatusResponse(TypedDict):
-    data: list[ShieldModeStatusResponseData]
+class ShieldModeStatusResponse(Payload[ShieldModeStatusResponseData]):
+    pass
 
 
 class PinnedChatMessageData(TypedDict):
@@ -1405,8 +1381,8 @@ class PinnedChatMessageData(TypedDict):
     updated_at: str
 
 
-class PinnedChatMessageResponse(TypedDict):
-    data: list[PinnedChatMessageData]
+class PinnedChatMessageResponse(Payload[PinnedChatMessageData]):
+    pass
 
 
 class PollsResponseChoices(TypedDict):
@@ -1434,17 +1410,16 @@ class PollsResponseData(TypedDict):
     ended_at: str | None
 
 
-class PollsResponse(TypedDict):
-    data: list[PollsResponseData]
+class PollsResponse(Payload[PollsResponseData]):
     pagination: Pagination
 
 
-class CreatePollResponse(TypedDict):
-    data: list[PollsResponseData]
+class CreatePollResponse(Payload[PollsResponseData]):
+    pass
 
 
-class EndPollResponse(TypedDict):
-    data: list[PollsResponseData]
+class EndPollResponse(Payload[PollsResponseData]):
+    pass
 
 
 class PredictionsResponseTopPredictors(TypedDict):
@@ -1479,17 +1454,16 @@ class PredictionsResponseData(TypedDict):
     locked_at: str | None
 
 
-class PredictionsResponse(TypedDict):
-    data: list[PredictionsResponseData]
+class PredictionsResponse(Payload[PredictionsResponseData]):
     pagination: Pagination
 
 
-class CreatePredictionResponse(TypedDict):
-    data: list[PredictionsResponseData]
+class CreatePredictionResponse(Payload[PredictionsResponseData]):
+    pass
 
 
-class EndPredictionResponse(TypedDict):
-    data: list[PredictionsResponseData]
+class EndPredictionResponse(Payload[PredictionsResponseData]):
+    pass
 
 
 class StartARaidResponseData(TypedDict):
@@ -1497,8 +1471,8 @@ class StartARaidResponseData(TypedDict):
     is_mature: bool
 
 
-class StartARaidResponse(TypedDict):
-    data: list[StartARaidResponseData]
+class StartARaidResponse(Payload[StartARaidResponseData]):
+    pass
 
 
 class ChannelStreamScheduleResponseCategory(TypedDict):
@@ -1548,8 +1522,8 @@ class SearchCategoriesResponseData(TypedDict):
     id: str
 
 
-class SearchCategoriesResponse(TypedDict):
-    data: list[SearchCategoriesResponseData]
+class SearchCategoriesResponse(Payload[SearchCategoriesResponseData]):
+    pass
 
 
 class SearchChannelsResponseData(TypedDict):
@@ -1567,8 +1541,7 @@ class SearchChannelsResponseData(TypedDict):
     started_at: str
 
 
-class SearchChannelsResponse(TypedDict):
-    data: list[SearchChannelsResponseData]
+class SearchChannelsResponse(Payload[SearchChannelsResponseData]):
     pagination: Pagination
 
 
@@ -1576,8 +1549,8 @@ class StreamKeyResponseData(TypedDict):
     stream_key: str
 
 
-class StreamKeyResponse(TypedDict):
-    data: list[StreamKeyResponseData]
+class StreamKeyResponse(Payload[StreamKeyResponseData]):
+    pass
 
 
 class StreamsResponseData(TypedDict):
@@ -1599,13 +1572,11 @@ class StreamsResponseData(TypedDict):
     is_mature: bool
 
 
-class StreamsResponse(TypedDict):
-    data: list[StreamsResponseData]
+class StreamsResponse(Payload[StreamsResponseData]):
     pagination: Pagination
 
 
-class FollowedStreamsResponse(TypedDict):
-    data: list[StreamsResponseData]
+class FollowedStreamsResponse(Payload[StreamsResponseData]):
     pagination: Pagination
 
 
@@ -1616,8 +1587,8 @@ class CreateStreamMarkerResponseData(TypedDict):
     description: str
 
 
-class CreateStreamMarkerResponse(TypedDict):
-    data: list[CreateStreamMarkerResponseData]
+class CreateStreamMarkerResponse(Payload[CreateStreamMarkerResponseData]):
+    pass
 
 
 class StreamMarkersResponseMarkers(TypedDict):
@@ -1640,8 +1611,7 @@ class StreamMarkersResponseData(TypedDict):
     videos: list[StreamMarkersResponseVideos]
 
 
-class StreamMarkersResponse(TypedDict):
-    data: list[StreamMarkersResponseData]
+class StreamMarkersResponse(Payload[StreamMarkersResponseData]):
     pagination: Pagination
 
 
@@ -1654,8 +1624,8 @@ class SuspiciousChatUserData(TypedDict):
     types: list[Literal["MANUALLY_ADDED", "DETECTED_BAN_EVADER", "DETECTED_SUS_CHATTER", "BANNED_IN_SHARED_CHANNEL"]]
 
 
-class SuspiciousChatUserResponse(TypedDict):
-    data: list[SuspiciousChatUserData]
+class SuspiciousChatUserResponse(Payload[SuspiciousChatUserData]):
+    pass
 
 
 class BroadcasterSubscriptionsResponseData(TypedDict):
@@ -1673,8 +1643,7 @@ class BroadcasterSubscriptionsResponseData(TypedDict):
     user_login: str
 
 
-class BroadcasterSubscriptionsResponse(TypedDict):
-    data: list[BroadcasterSubscriptionsResponseData]
+class BroadcasterSubscriptionsResponse(Payload[BroadcasterSubscriptionsResponseData]):
     pagination: Pagination
     points: int
     total: int
@@ -1691,8 +1660,8 @@ class CheckUserSubscriptionResponseData(TypedDict):
     tier: Literal["1000", "2000", "3000"]
 
 
-class CheckUserSubscriptionResponse(TypedDict):
-    data: list[CheckUserSubscriptionResponseData]
+class CheckUserSubscriptionResponse(Payload[CheckUserSubscriptionResponseData]):
+    pass
 
 
 class ChannelTeamsResponseData(TypedDict):
@@ -1710,8 +1679,8 @@ class ChannelTeamsResponseData(TypedDict):
     id: str
 
 
-class ChannelTeamsResponse(TypedDict):
-    data: list[ChannelTeamsResponseData]
+class ChannelTeamsResponse(Payload[ChannelTeamsResponseData]):
+    pass
 
 
 class TeamsResponseUsers(TypedDict):
@@ -1733,8 +1702,8 @@ class TeamsResponseData(TypedDict):
     id: str
 
 
-class TeamsResponse(TypedDict):
-    data: list[TeamsResponseData]
+class TeamsResponse(Payload[TeamsResponseData]):
+    pass
 
 
 class UsersResponseData(TypedDict):
@@ -1751,12 +1720,12 @@ class UsersResponseData(TypedDict):
     created_at: str
 
 
-class UsersResponse(TypedDict):
-    data: list[UsersResponseData]
+class UsersResponse(Payload[UsersResponseData]):
+    pass
 
 
-class UpdateUserResponse(TypedDict):
-    data: list[UsersResponseData]
+class UpdateUserResponse(Payload[UsersResponseData]):
+    pass
 
 
 class AuthorizationByUserResponseData(TypedDict):
@@ -1767,8 +1736,8 @@ class AuthorizationByUserResponseData(TypedDict):
     has_authorized: bool
 
 
-class AuthorizationByUserResponse(TypedDict):
-    data: list[AuthorizationByUserResponseData]
+class AuthorizationByUserResponse(Payload[AuthorizationByUserResponseData]):
+    pass
 
 
 class UserBlockListResponseData(TypedDict):
@@ -1777,8 +1746,8 @@ class UserBlockListResponseData(TypedDict):
     display_name: str
 
 
-class UserBlockListResponse(TypedDict):
-    data: list[UserBlockListResponseData]
+class UserBlockListResponse(Payload[UserBlockListResponseData]):
+    pass
 
 
 class UserExtensionsResponseData(TypedDict):
@@ -1789,8 +1758,8 @@ class UserExtensionsResponseData(TypedDict):
     type: list[Literal["component", "mobile", "overlay", "panel"]]
 
 
-class UserExtensionsResponse(TypedDict):
-    data: list[UserExtensionsResponseData]
+class UserExtensionsResponse(Payload[UserExtensionsResponseData]):
+    pass
 
 
 class UserPanelItem(TypedDict):
@@ -1855,13 +1824,12 @@ class VideosResponseData(TypedDict):
     muted_segments: list[VideosResponseMutedSegments] | None
 
 
-class VideosResponse(TypedDict):
-    data: list[VideosResponseData]
+class VideosResponse(Payload[VideosResponseData]):
     pagination: Pagination
 
 
-class DeleteVideosResponse(TypedDict):
-    data: list[str]
+class DeleteVideosResponse(Payload[str]):
+    pass
 
 
 class WarnChatUserResponseData(TypedDict):
@@ -1871,5 +1839,5 @@ class WarnChatUserResponseData(TypedDict):
     reason: str
 
 
-class WarnChatUserResponse(TypedDict):
-    data: list[WarnChatUserResponseData]
+class WarnChatUserResponse(Payload[WarnChatUserResponseData]):
+    pass
