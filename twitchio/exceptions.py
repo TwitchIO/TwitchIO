@@ -21,7 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-__all__ = ("HTTPException", "MissingCLIParamError", "TwitchIOException")
+__all__ = (
+    "HTTPException",
+    "MissingCLIParamError",
+    "MissingConditionError",
+    "MissingTokenError",
+    "SubscriptionException",
+    "TwitchIOException",
+    "WebsocketConnectionError",
+    "WebsocketException",
+)
 
 # TODO: Docs...
 
@@ -30,6 +39,9 @@ class TwitchIOException(Exception): ...
 
 
 class HTTPException(TwitchIOException): ...
+
+
+class MissingTokenError(HTTPException): ...
 
 
 class MissingCLIParamError(TwitchIOException): ...
