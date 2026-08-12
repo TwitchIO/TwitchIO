@@ -27,14 +27,21 @@ import asyncio
 import logging
 import sys
 from functools import cached_property
+from typing import TYPE_CHECKING, Any, Unpack
 
 import aiohttp
 
 from twitchio import __version__
 
 from ..exceptions import *
-from ..utils import MISSING
+from ..models import *
+from ..utils import JSON_LOADS, MISSING
 from .routes import RequestManager, Route
+
+
+if TYPE_CHECKING:
+    from twitchio.types_.requests import *
+    from twitchio.types_.responses import *
 
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -89,37 +96,49 @@ class HTTPClient:
 
                     if status == 204:
                         return
+
                     elif 200 <= status < 300:
                         return await resp.text()
 
-                    if status == 503:
+                    elif status == 503:
                         if failed:
-                            raise  # TODO: ...
+                            raise HTTPException  # TODO: ...
 
                         failed = True
                         await asyncio.sleep(3)
                         continue
 
-                    if status == 429:
-                        # TODO ...
-                        ...
+                    elif status == 429:
+                        if not await self._manager.handle_ratelimits(route):
+                            raise HTTPException  # TODO
 
-                    if status == 401:
-                        # TODO: ...
-                        ...
-            except BaseException:
+                    elif status == 401 and not await self._manager.handle_auth_error(route):
+                        raise HTTPException  # TODO
+
+                    raise HTTPException  # TODO: ...
+            except aiohttp.ClientConnectionError:
                 if failed:
-                    # TODO: ...
-                    raise
+                    raise  # TODO: ...
 
                 failed = True
                 await asyncio.sleep(3)
 
-    async def request_json(self, route: Route) -> ...: ...
+    async def request_json(self, route: Route) -> ...:
+        route.headers.update({"Accept": "application/json"})
+        text = await self.request(route)
+
+        try:
+            data = JSON_LOADS(text)
+            return data
+        except Exception:
+            raise HTTPException  # TODO: ...
 
     async def request_paginated(self, route: Route, *, type: ..., nested_key: str = MISSING) -> ...:
         while True:
             await self.request_json(route)
+
+    def build_model(self, model: type, *, data: Any) -> Any:
+        return model(**data, http_=self)
 
     async def request_asset_head(self) -> ...: ...
 
@@ -189,7 +208,15 @@ class HTTPClient:
     # -- Conduits --
     async def get_conduits(self) -> ...: ...
     async def create_conduits(self) -> ...: ...
-    async def update_conduits(self) -> ...: ...
+
+    async def _update_conduits(self, **kwargs: Unpack[UpdateConduitsRequestT]) -> UpdateConduitsResponseT:
+        route = Route("PATCH", "eventsub/conduits", json=kwargs)
+        return await self.request_json(route)
+
+    async def update_conduits(self, **kwargs: Unpack[UpdateConduitsRequestT]) -> Conduit:
+        resp: UpdateConduitsResponseT = await self._update_conduits(**kwargs)
+        return self.build_model(Conduit, data=resp)
+
     async def delete_conduit(self) -> ...: ...
     async def get_conduit_shards(self) -> ...: ...
     async def update_conduit_shards(self) -> ...: ...
