@@ -172,6 +172,10 @@ class RequestManager:
         self._prefers_user = prefers_user
         self._tokens: dict[str, str] = {}
 
+    async def handle_ratelimits(self, route: Route) -> bool: ...
+
+    async def handle_auth_error(self, route: Route) -> bool: ...
+
     def update_route(self, route: Route, /, extras: dict[str, Any]) -> None:
         headers = extras
         token: str | None = headers.get("Authorization")
