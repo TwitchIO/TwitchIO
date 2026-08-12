@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 
 class Client:
     def __init__(self, **options: Unpack[ClientOptionsT]) -> None:
+        self._client_id: str = options.get("client_id")
         self._http = HTTPClient()
         self._events = EventDispatcher()
         self._sockets = WebsocketManager(self)

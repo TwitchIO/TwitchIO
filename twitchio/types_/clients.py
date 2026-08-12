@@ -21,11 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import TypedDict
+from typing import TypedDict, Required
 
 
 # TODO: Discuss names of options...
 
 
 class ClientOptionsT(TypedDict, total=False):
+    client_id: Required[str]
     enable_raw_events: bool
