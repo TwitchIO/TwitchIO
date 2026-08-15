@@ -22,6 +22,7 @@ SOFTWARE.
 """
 
 __all__ = (
+    "BadRequestError",
     "ForbiddenError",
     "HTTPException",
     "MissingCLIParamError",
@@ -55,6 +56,9 @@ class ForbiddenError(HTTPException): ...
 
 
 class NotFoundError(HTTPException): ...
+
+
+class BadRequestError(HTTPException): ...
 
 
 class MissingCLIParamError(TwitchIOException): ...
