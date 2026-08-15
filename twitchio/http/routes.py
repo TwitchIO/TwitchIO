@@ -67,6 +67,7 @@ class Route:
         "_url",
         "could_404",
         "data",
+        "encoded",
         "headers",
         "json",
         "method",
@@ -89,6 +90,7 @@ class Route:
         use_id: bool = False,
         no_app: bool = False,
         could_404: bool = False,
+        encoded: bool = False,
         **kwargs: Unpack[APIRequestKwargs],
     ) -> None:
         self.params: ParamMappingT = kwargs.pop("params", {})
@@ -103,6 +105,10 @@ class Route:
 
         self._base_url: str = ""
         self._url: str = self.build_url(duplicate_key=not use_id)
+
+        self.encoded = encoded
+        if encoded:
+            self.headers.update({"Content-Type": "application/x-www-form-urlencoded"})
 
     def __str__(self) -> str:
         return str(self._url)
