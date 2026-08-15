@@ -23,6 +23,7 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import urllib.parse
 from typing import TYPE_CHECKING, Any, ClassVar, Unpack
@@ -32,6 +33,8 @@ from ..utils import MISSING
 
 
 if TYPE_CHECKING:
+    from aiohttp import ClientResponse
+
     from ..types_.http import APIRequestKwargs, HTTPMethodT, ParamMappingT
     from .clients import HTTPClient
 
@@ -62,6 +65,7 @@ class Route:
     __slots__ = (
         "_base_url",
         "_url",
+        "could_404",
         "data",
         "headers",
         "json",
@@ -84,6 +88,7 @@ class Route:
         *,
         use_id: bool = False,
         no_app: bool = False,
+        could_404: bool = False,
         **kwargs: Unpack[APIRequestKwargs],
     ) -> None:
         self.params: ParamMappingT = kwargs.pop("params", {})
@@ -91,7 +96,7 @@ class Route:
         self.headers: dict[str, str] = kwargs.get("headers", {})
         self.token_for: str = str(kwargs.get("token_for", ""))
         self.no_app = no_app
-
+        self.could_404 = could_404
         self.use_id = use_id
         self.method = method
         self.path = path
@@ -172,9 +177,30 @@ class RequestManager:
         self._prefers_user = prefers_user
         self._tokens: dict[str, str] = {}
 
-    async def handle_ratelimits(self, route: Route) -> bool: ...
+    async def close(self) -> None: ...
 
-    async def handle_auth_error(self, route: Route) -> bool: ...
+    async def handle_error_code(self, route: Route, resp: ClientResponse, status: int) -> None:
+        if status == 503:
+            await asyncio.sleep(3)
+
+        elif status == 429:
+            if not await self.handle_ratelimits(route):
+                raise HTTPException  # TODO
+
+        elif status == 401 and not await self.handle_auth_error(route):
+            raise UnauthorizedError  # TODO ...
+
+        elif status == 404:
+            if route.could_404:
+                raise NotFoundError  # TODO ...
+
+            raise HTTPException  # TODO ...
+
+        raise HTTPException  # TODO: ...
+
+    async def handle_ratelimits(self, route: Route, /) -> bool: ...
+
+    async def handle_auth_error(self, route: Route, /) -> bool: ...
 
     def update_route(self, route: Route, /, extras: dict[str, Any]) -> None:
         headers = extras
@@ -196,5 +222,5 @@ class RequestManager:
         if not token or token is MISSING:
             raise MissingTokenError("No valid token available for this request.")
 
-        headers.update({"Authorization": token})
+        headers.update({"Authorization": f"Bearer {token}"})
         route.update_headers(headers)
