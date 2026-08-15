@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import TypedDict, Required
+from typing import Required, TypedDict
 
 
 # TODO: Discuss names of options...
