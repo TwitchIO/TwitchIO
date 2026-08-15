@@ -28,6 +28,14 @@ class Payload[T](TypedDict):
     data: list[T]
 
 
+class OAuthValidateResponseT(TypedDict):
+    client_id: str
+    login: str | None  # User | App
+    scopes: list[str]
+    user_id: str | None  # User | App
+    expires_in: int
+
+
 class UpdateConduitsDataT(TypedDict):
     id: str
     shard_count: int

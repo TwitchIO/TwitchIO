@@ -21,5 +21,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .conduits import *
-from .oauth import *
+from typing import Unpack
+
+from ..types_.responses import OAuthValidateResponseT
+from .base import BaseModel
+
+
+__all__ = ("OAuthValidatePayload",)
+
+
+class OAuthValidatePayload(BaseModel):
+    __slots__ = ("client_id", "expires_in", "login", "scopes", "user_id")
+
+    def __init__(self, **data: Unpack[OAuthValidateResponseT]) -> None:
+        self.client_id = data["client_id"]
+        self.login = data["login"]
+        self.scopes = data["scopes"]  # TODO: Scopes object...
+        self.user_id = data["user_id"]
+        self.expires_in = data["expires_in"]  # TODO: datetime?/delta?
