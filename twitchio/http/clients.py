@@ -154,7 +154,7 @@ class HTTPClient:
         # NOTE: Can fail with 401; refresh_token is no longer valid
         # NOTE: 400 (Bad Request) is a custom payload response; invalid refresh_token
         # NOTE: client_secret is not required; public apps
-        route = Route("POST", "oauth2/token", params=kwargs)  # type: ignore[arg-type]
+        route = Route("POST", "oauth2/token", params=kwargs, encoded=True)  # type: ignore[arg-type]
 
         try:
             return await self.request_json(route)
@@ -168,7 +168,17 @@ class HTTPClient:
 
     async def _oauth_fetch_user_token(self) -> ...: ...
 
-    async def _oauth_fetch_app_token(self) -> ...: ...
+    async def _oauth_fetch_client_credentials(
+        self, **kwargs: Unpack[OAuthClientCredentialsRequestT]
+    ) -> OAuthClientCredentialsResponseT:
+        route = Route("POST", "oauth/token")
+        return await self.request_json(route)
+
+    async def oauth_fetch_client_credentials(
+        self, **kwargs: Unpack[OAuthClientCredentialsRequestT]
+    ) -> OAuthClientCredentialsPayload:
+        resp = await self._oauth_fetch_client_credentials(**kwargs)
+        return self.build_model(OAuthClientCredentialsPayload, data=resp)
 
     async def _oauth_revoke_token(self) -> ...: ...
 

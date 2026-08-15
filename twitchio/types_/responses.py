@@ -47,6 +47,12 @@ class OAuthRefreshResponseT(TypedDict):
     token_type: Literal["bearer"]
 
 
+class OAuthClientCredentialsResponseT(TypedDict):
+    access_token: str
+    expires_in: int
+    token_type: Literal["bearer"]
+
+
 # ---- CONDUITS ----
 class UpdateConduitsDataT(TypedDict):
     id: str

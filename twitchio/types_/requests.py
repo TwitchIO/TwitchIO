@@ -24,9 +24,13 @@ SOFTWARE.
 from typing import Any, Literal, NotRequired, TypedDict
 
 
-class UpdateConduitsRequestT(TypedDict):
-    id: str
-    shard_count: int
+# ---- OAuth ----
+
+
+class OAuthClientCredentialsRequestT(TypedDict):
+    client_id: str
+    client_secret: str
+    grant_type: Literal["client_credentials"]
 
 
 class OAuthRefreshRequestT(TypedDict, extra_items=Any):
@@ -34,3 +38,8 @@ class OAuthRefreshRequestT(TypedDict, extra_items=Any):
     client_secret: NotRequired[str]
     grant_type: Literal["refresh_token"]
     refresh_token: str
+
+
+class UpdateConduitsRequestT(TypedDict):
+    id: str
+    shard_count: int
