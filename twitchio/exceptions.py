@@ -22,12 +22,15 @@ SOFTWARE.
 """
 
 __all__ = (
+    "ForbiddenError",
     "HTTPException",
     "MissingCLIParamError",
     "MissingConditionError",
     "MissingTokenError",
+    "NotFoundError",
     "SubscriptionException",
     "TwitchIOException",
+    "UnauthorizedError",
     "WebsocketConnectionError",
     "WebsocketException",
 )
@@ -38,10 +41,20 @@ __all__ = (
 class TwitchIOException(Exception): ...
 
 
+# HTTP
 class HTTPException(TwitchIOException): ...
 
 
 class MissingTokenError(HTTPException): ...
+
+
+class UnauthorizedError(HTTPException): ...
+
+
+class ForbiddenError(HTTPException): ...
+
+
+class NotFoundError(HTTPException): ...
 
 
 class MissingCLIParamError(TwitchIOException): ...
