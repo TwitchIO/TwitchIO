@@ -39,7 +39,7 @@ class OAuthValidateResponseT(TypedDict):
     expires_in: int
 
 
-class OAuthRefreshResponstT(TypedDict):
+class OAuthRefreshResponseT(TypedDict):
     access_token: str
     expires_in: int
     refresh_token: str

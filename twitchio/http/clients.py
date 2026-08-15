@@ -150,7 +150,7 @@ class HTTPClient:
         resp = await self._oauth_validate(token)
         return self.build_model(OAuthValidatePayload, data=resp)
 
-    async def _oauth_refresh(self, **kwargs: Unpack[OAuthRefreshRequestT]) -> OAuthRefreshResponstT:
+    async def _oauth_refresh(self, **kwargs: Unpack[OAuthRefreshRequestT]) -> OAuthRefreshResponseT:
         # NOTE: Can fail with 401; refresh_token is no longer valid
         # NOTE: 400 (Bad Request) is a custom payload response; invalid refresh_token
         # NOTE: client_secret is not required; public apps

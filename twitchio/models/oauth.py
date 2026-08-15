@@ -23,7 +23,7 @@ SOFTWARE.
 
 from typing import Unpack
 
-from ..types_.responses import OAuthRefreshResponstT, OAuthValidateResponseT
+from ..types_.responses import OAuthRefreshResponseT, OAuthValidateResponseT
 from .base import BaseModel
 
 
@@ -44,7 +44,7 @@ class OAuthValidatePayload(BaseModel):
 class OAuthRefreshPayload(BaseModel):
     __slots__ = ("access_token", "expires_in", "refresh_token", "scopes", "token_type")
 
-    def __init__(self, **data: Unpack[OAuthRefreshResponstT]) -> None:
+    def __init__(self, **data: Unpack[OAuthRefreshResponseT]) -> None:
         self.access_token = data["access_token"]
         self.expires_in = data["expires_in"]
         self.refresh_token = data["refresh_token"]
