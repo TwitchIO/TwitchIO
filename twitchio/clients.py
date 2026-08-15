@@ -37,8 +37,10 @@ if TYPE_CHECKING:
 
 class Client:
     def __init__(self, **options: Unpack[ClientOptionsT]) -> None:
+        # TODO: aiohttp.ClientSession Opt
+
         self._client_id: str = options.get("client_id")
-        self._http = HTTPClient()
+        self._http = HTTPClient(client_id=self._client_id)
         self._events = EventDispatcher()
         self._sockets = WebsocketManager(self)
 
