@@ -140,11 +140,31 @@ class HTTPClient:
     # async def request_asset(self) -> ...: ...
 
     # OAuth
-    async def _oauth_validate(self) -> OAuthValidateResponseT: ...
+    async def _oauth_validate(self, token: str) -> OAuthValidateResponseT:
+        token = token.removeprefix("OAuth ").removeprefix("Bearer ")
+        route = Route("GET", "oauth2/validate", use_id=True, headers={"Authorization": f"OAuth {token}"})
 
-    async def oauth_validate(self) -> OAuthValidatePayload: ...
+        return await self.request_json(route)
 
-    async def _oauth_refresh(self) -> ...: ...
+    async def oauth_validate(self, token: str) -> OAuthValidatePayload:
+        resp = await self._oauth_validate(token)
+        return self.build_model(OAuthValidatePayload, data=resp)
+
+    async def _oauth_refresh(self, **kwargs: Unpack[OAuthRefreshRequestT]) -> OAuthRefreshResponstT:
+        # NOTE: Can fail with 401; refresh_token is no longer valid
+        # NOTE: 400 (Bad Request) is a custom payload response; invalid refresh_token
+        # NOTE: client_secret is not required; public apps
+        route = Route("POST", "oauth2/token", params=kwargs)  # type: ignore[arg-type]
+
+        try:
+            return await self.request_json(route)
+        except BadRequestError:
+            # TODO: ...
+            raise
+
+    async def oauth_refresh(self, **kwargs: Unpack[OAuthRefreshRequestT]) -> OAuthRefreshPayload:
+        resp = await self._oauth_refresh(**kwargs)
+        return self.build_model(OAuthRefreshPayload, data=resp)
 
     async def _oauth_fetch_user_token(self) -> ...: ...
 

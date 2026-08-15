@@ -23,11 +23,11 @@ SOFTWARE.
 
 from typing import Unpack
 
-from ..types_.responses import OAuthValidateResponseT
+from ..types_.responses import OAuthRefreshResponstT, OAuthValidateResponseT
 from .base import BaseModel
 
 
-__all__ = ("OAuthValidatePayload",)
+__all__ = ("OAuthRefreshPayload", "OAuthValidatePayload")
 
 
 class OAuthValidatePayload(BaseModel):
@@ -39,3 +39,14 @@ class OAuthValidatePayload(BaseModel):
         self.scopes = data["scopes"]  # TODO: Scopes object...
         self.user_id = data["user_id"]
         self.expires_in = data["expires_in"]  # TODO: datetime?/delta?
+
+
+class OAuthRefreshPayload(BaseModel):
+    __slots__ = ("access_token", "expires_in", "refresh_token", "scopes", "token_type")
+
+    def __init__(self, **data: Unpack[OAuthRefreshResponstT]) -> None:
+        self.access_token = data["access_token"]
+        self.expires_in = data["expires_in"]
+        self.refresh_token = data["refresh_token"]
+        self.scopes = data["scope"]  # TODO: Scopes object...
+        self.token_type = data["token_type"]

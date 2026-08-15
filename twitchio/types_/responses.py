@@ -21,11 +21,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 
 class Payload[T](TypedDict):
     data: list[T]
+
+
+# ---- OAUTH ----
 
 
 class OAuthValidateResponseT(TypedDict):
@@ -36,6 +39,15 @@ class OAuthValidateResponseT(TypedDict):
     expires_in: int
 
 
+class OAuthRefreshResponstT(TypedDict):
+    access_token: str
+    expires_in: int
+    refresh_token: str
+    scope: list[str]
+    token_type: Literal["bearer"]
+
+
+# ---- CONDUITS ----
 class UpdateConduitsDataT(TypedDict):
     id: str
     shard_count: int

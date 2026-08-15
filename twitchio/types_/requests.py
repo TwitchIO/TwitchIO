@@ -21,9 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import TypedDict
+from typing import Any, Literal, NotRequired, TypedDict
 
 
 class UpdateConduitsRequestT(TypedDict):
     id: str
     shard_count: int
+
+
+class OAuthRefreshRequestT(TypedDict, extra_items=Any):
+    client_id: str
+    client_secret: NotRequired[str]
+    grant_type: Literal["refresh_token"]
+    refresh_token: str

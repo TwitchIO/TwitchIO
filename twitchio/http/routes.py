@@ -183,6 +183,9 @@ class RequestManager:
         if status == 503:
             await asyncio.sleep(3)
 
+        elif status == 400:
+            raise BadRequestError  # TODO
+
         elif status == 429:
             if not await self.handle_ratelimits(route):
                 raise HTTPException  # TODO
