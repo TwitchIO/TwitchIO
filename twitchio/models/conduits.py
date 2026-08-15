@@ -36,6 +36,8 @@ __all__ = ("Conduit", "ConduitShard")
 
 
 class Conduit(BaseModel):
+    __slots__ = ("_id", "_shard_count")
+
     def __init__(self, **data: Unpack[ConduitData]) -> None:
         self._id = data["id"]
         self._shard_count = data["shard_count"]
@@ -61,4 +63,5 @@ class Conduit(BaseModel):
     async def update_shards(self) -> ...: ...
 
 
-class ConduitShard: ...
+class ConduitShard:
+    __slots__ = ()

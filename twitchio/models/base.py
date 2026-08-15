@@ -27,6 +27,7 @@ from ..http import HTTPClient
 
 
 class BaseModel:
+    __slots__ = ("_http",)
     _http: HTTPClient
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
