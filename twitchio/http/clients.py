@@ -48,10 +48,11 @@ LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 class HTTPClient:
-    def __init__(self, *, session: aiohttp.ClientSession = MISSING, client_id: str) -> None:
+    def __init__(self, *, session: aiohttp.ClientSession = MISSING, client_id: str, app_token: str = MISSING) -> None:
         self._session = session
+        self._user_session: bool = session is not MISSING
         self._client_id = client_id
-        self._manager = RequestManager(self)
+        self._manager = RequestManager(self, app_token=app_token)
         self._has_setup: bool = False
 
         pyver = f"{sys.version_info[0]}.{sys.version_info[1]}"
@@ -74,9 +75,18 @@ class HTTPClient:
         self._session = aiohttp.ClientSession(headers=self.headers)
         LOGGER.debug("Completed setup for %s.", type(self).__qualname__)
 
-    def cleanup(self) -> ...: ...
+    def cleanup(self) -> None:
+        if not self._user_session:
+            self._session = MISSING
 
-    async def close(self) -> ...: ...
+        self._has_setup = False
+
+    async def close(self) -> None:
+        if not self._user_session:
+            await self._session.close()
+
+        await self._manager.close()
+        self.cleanup()
 
     async def request(self, route: Route) -> str | None:
         failed = False
@@ -93,29 +103,18 @@ class HTTPClient:
             try:
                 async with self._session.request(method, url, headers=route.headers, json=route.json or None) as resp:
                     status = resp.status
-
                     if status == 204:
                         return
 
-                    elif 200 <= status < 300:
+                    if 200 <= status < 300:
                         return await resp.text()
 
-                    elif status == 503:
-                        if failed:
-                            raise HTTPException  # TODO: ...
+                    if failed:
+                        raise HTTPException  # TODO ...
 
-                        failed = True
-                        await asyncio.sleep(3)
-                        continue
+                    await self._manager.handle_error_code(route, resp=resp, status=status)
+                    failed = True
 
-                    elif status == 429:
-                        if not await self._manager.handle_ratelimits(route):
-                            raise HTTPException  # TODO
-
-                    elif status == 401 and not await self._manager.handle_auth_error(route):
-                        raise HTTPException  # TODO
-
-                    raise HTTPException  # TODO: ...
             except aiohttp.ClientConnectionError:
                 if failed:
                     raise  # TODO: ...
@@ -125,13 +124,9 @@ class HTTPClient:
 
     async def request_json(self, route: Route) -> ...:
         route.headers.update({"Accept": "application/json"})
-        text = await self.request(route)
 
-        try:
-            data = JSON_LOADS(text)
-            return data
-        except Exception:
-            raise HTTPException  # TODO: ...
+        text = await self.request(route)
+        return JSON_LOADS(text)
 
     async def request_paginated(self, route: Route, *, type: ..., nested_key: str = MISSING) -> ...:
         while True:
@@ -140,9 +135,28 @@ class HTTPClient:
     def build_model(self, model: type, *, data: Any) -> Any:
         return model(**data, http_=self)
 
-    async def request_asset_head(self) -> ...: ...
+    # async def request_asset_head(self) -> ...: ...
 
-    async def request_asset(self) -> ...: ...
+    # async def request_asset(self) -> ...: ...
+
+    # OAuth
+    async def _oauth_validate(self) -> OAuthValidateResponseT: ...
+
+    async def oauth_validate(self) -> OAuthValidatePayload: ...
+
+    async def _oauth_refresh(self) -> ...: ...
+
+    async def _oauth_fetch_user_token(self) -> ...: ...
+
+    async def _oauth_fetch_app_token(self) -> ...: ...
+
+    async def _oauth_revoke_token(self) -> ...: ...
+
+    async def _oauth_dcf(self) -> ...: ...
+
+    async def _oauth_dcf_authorize(self) -> ...: ...
+
+    def _get_auth_url(self) -> ...: ...
 
     # -- Ads --
     async def start_commercial(self) -> ...: ...
