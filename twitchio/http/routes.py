@@ -97,7 +97,7 @@ class Route:
         encoded: bool = False,
         **kwargs: Unpack[APIRequestKwargs],
     ) -> None:
-        self.params: ParamMappingT = kwargs.pop("params", {})
+        self.params: Any = kwargs.pop("params", {})
         self.json: Any = kwargs.get("json", {})
         self.headers: dict[str, str] = kwargs.get("headers", {})
         self.token_for: str = str(kwargs.get("token_for", ""))
@@ -117,6 +117,7 @@ class Route:
     def __str__(self) -> str:
         return str(self._url)
 
+    # type: ignore[arg-type]
     def __repr__(self) -> str:
         return f"{self.method}[{self.base_url}]"
 
