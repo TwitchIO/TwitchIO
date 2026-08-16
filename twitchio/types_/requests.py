@@ -40,6 +40,20 @@ class OAuthRefreshRequestT(TypedDict, extra_items=Any):
     refresh_token: str
 
 
+class OAuthRevokeRequestT(TypedDict):
+    client_id: str
+    token: str
+
+
+class OAuthAuthFlowRequestT(TypedDict):
+    client_id: str
+    client_secret: str
+    code: str
+    grant_type: Literal["authorization_code"]
+    redirect_uri: str
+
+
+# ---- Conduits ----
 class UpdateConduitsRequestT(TypedDict):
     id: str
     shard_count: int

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import datetime
 import urllib.parse
 from typing import TYPE_CHECKING, Any, ClassVar, Unpack
 
@@ -37,6 +38,9 @@ if TYPE_CHECKING:
 
     from ..types_.http import APIRequestKwargs, HTTPMethodT, ParamMappingT
     from .clients import HTTPClient
+
+
+RL_THRESHOLD: int = 3
 
 
 class Route:
@@ -185,7 +189,7 @@ class RequestManager:
 
     async def close(self) -> None: ...
 
-    async def handle_error_code(self, route: Route, resp: ClientResponse, status: int) -> None:
+    async def handle_error_code(self, route: Route, /, *, resp: ClientResponse, status: int) -> None:
         if status == 503:
             await asyncio.sleep(3)
 
@@ -193,7 +197,7 @@ class RequestManager:
             raise BadRequestError  # TODO
 
         elif status == 429:
-            if not await self.handle_ratelimits(route):
+            if not await self.handle_ratelimits(route, resp=resp):
                 raise HTTPException  # TODO
 
         elif status == 401 and not await self.handle_auth_error(route):
@@ -207,7 +211,24 @@ class RequestManager:
 
         raise HTTPException  # TODO: ...
 
-    async def handle_ratelimits(self, route: Route, /) -> bool: ...
+    async def handle_ratelimits(self, route: Route, /, *, resp: ClientResponse) -> bool:
+        headers = resp.headers
+
+        limits = headers.get("Ratelimit-Reset", None)
+        if limits is None:
+            return False
+
+        reset = datetime.datetime.fromtimestamp(int(limits), tz=datetime.UTC)
+        remaining = (reset - datetime.datetime.now(datetime.UTC)).total_seconds()
+
+        if remaining <= 0:
+            return True
+
+        if remaining >= RL_THRESHOLD:
+            return False
+
+        await asyncio.sleep(remaining)
+        return True
 
     async def handle_auth_error(self, route: Route, /) -> bool: ...
 

@@ -122,10 +122,13 @@ class HTTPClient:
                 failed = True
                 await asyncio.sleep(3)
 
-    async def request_json(self, route: Route) -> ...:
+    async def request_json(self, route: Route) -> Any:
         route.headers.update({"Accept": "application/json"})
 
         text = await self.request(route)
+        if not text:
+            return  # Some routes return 200 (No Body) + JSON on errors
+
         return JSON_LOADS(text)
 
     async def request_paginated(self, route: Route, *, type: ..., nested_key: str = MISSING) -> ...:
@@ -154,7 +157,7 @@ class HTTPClient:
         # NOTE: Can fail with 401; refresh_token is no longer valid
         # NOTE: 400 (Bad Request) is a custom payload response; invalid refresh_token
         # NOTE: client_secret is not required; public apps
-        route = Route("POST", "oauth2/token", params=kwargs, encoded=True)  # type: ignore[arg-type]
+        route = Route("POST", "oauth2/token", params=kwargs, use_id=True, encoded=True)  # type: ignore[arg-type]
 
         try:
             return await self.request_json(route)
@@ -166,12 +169,18 @@ class HTTPClient:
         resp = await self._oauth_refresh(**kwargs)
         return self.build_model(OAuthRefreshPayload, data=resp)
 
-    async def _oauth_fetch_user_token(self) -> ...: ...
+    async def _oauth_fetch_user_token(self, **kwargs: Unpack[OAuthAuthFlowRequestT]) -> OAuthAuthFlowResponseT:
+        route = Route("POST", "oauth2/token", params=kwargs, use_id=True, encoded=True)  # type: ignore[arg-type]
+        return await self.request_json(route)
+
+    async def oauth_fetch_user_token(self, **kwargs: Unpack[OAuthAuthFlowRequestT]) -> OAuthAuthFlowPayload:
+        resp = await self._oauth_fetch_user_token(**kwargs)
+        return self.build_model(OAuthAuthFlowPayload, data=resp)
 
     async def _oauth_fetch_client_credentials(
         self, **kwargs: Unpack[OAuthClientCredentialsRequestT]
     ) -> OAuthClientCredentialsResponseT:
-        route = Route("POST", "oauth/token")
+        route = Route("POST", "oauth2/token", params=kwargs, use_id=True, encoded=True)  # type: ignore[arg-type]
         return await self.request_json(route)
 
     async def oauth_fetch_client_credentials(
@@ -180,7 +189,11 @@ class HTTPClient:
         resp = await self._oauth_fetch_client_credentials(**kwargs)
         return self.build_model(OAuthClientCredentialsPayload, data=resp)
 
-    async def _oauth_revoke_token(self) -> ...: ...
+    async def oauth_revoke_token(self, **kwargs: Unpack[OAuthRevokeRequestT]) -> None:
+        # NOTE: 400 Bad Request if the client ID is valid but the access token is not.
+        # NOTE: 404 Not Found if the client ID is not valid.
+        route = Route("POST", "oauth2/revoke", params=kwargs, use_id=True, encoded=True)  # type: ignore[arg-type]
+        return await self.request_json(route)
 
     async def _oauth_dcf(self) -> ...: ...
 

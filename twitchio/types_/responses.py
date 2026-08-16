@@ -53,6 +53,14 @@ class OAuthClientCredentialsResponseT(TypedDict):
     token_type: Literal["bearer"]
 
 
+class OAuthAuthFlowResponseT(TypedDict):
+    access_token: str
+    expires_in: int
+    refresh_token: str
+    scope: list[str]
+    token_type: Literal["bearer"]
+
+
 # ---- CONDUITS ----
 class UpdateConduitsDataT(TypedDict):
     id: str
