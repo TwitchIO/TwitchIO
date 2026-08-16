@@ -23,11 +23,10 @@ SOFTWARE.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import sys
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Unpack
+from typing import TYPE_CHECKING, Any, TypeVar, Unpack, overload
 
 import aiohttp
 
@@ -35,6 +34,7 @@ from twitchio import __version__
 
 from ..exceptions import *
 from ..models import *
+from ..models.base import BaseModel
 from ..utils import JSON_LOADS, MISSING
 from .routes import RequestManager, Route
 
@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
+ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
 class HTTPClient:
@@ -88,8 +89,8 @@ class HTTPClient:
         await self._manager.close()
         self.cleanup()
 
-    async def request(self, route: Route) -> str | None:
-        failed = False
+    async def request(self, route: Route) -> Any:
+        failed: int | None = None
 
         if not self._has_setup:
             await self.setup()
@@ -110,17 +111,17 @@ class HTTPClient:
                         return await resp.text()
 
                     if failed:
+                        if failed != status:
+                            raise HTTPException from HTTPException  # TODO: ...
+
                         raise HTTPException  # TODO ...
 
                     await self._manager.handle_error_code(route, resp=resp, status=status)
-                    failed = True
+                    failed = status
 
             except aiohttp.ClientConnectionError:
-                if failed:
-                    raise  # TODO: ...
-
-                failed = True
-                await asyncio.sleep(3)
+                # TODO: ...
+                raise
 
     async def request_json(self, route: Route) -> Any:
         route.headers.update({"Accept": "application/json"})
@@ -135,8 +136,17 @@ class HTTPClient:
         while True:
             await self.request_json(route)
 
-    def build_model(self, model: type, *, data: Any) -> Any:
-        return model(**data, http_=self)
+    @overload
+    def build_model(self, model: type[ModelT], *, data: Any, key: None) -> ModelT: ...
+
+    @overload
+    def build_model(self, model: type[ModelT], *, data: Any, key: str = "data") -> list[ModelT]: ...
+
+    def build_model(self, model: type[ModelT], *, data: Any, key: str | None = "data") -> ModelT | list[ModelT]:
+        if key is None:
+            return model(**data, http_=self)
+
+        return [model(**inner, http_=self) for inner in data[key]]
 
     # async def request_asset_head(self) -> ...: ...
 
@@ -151,13 +161,13 @@ class HTTPClient:
 
     async def oauth_validate(self, token: str) -> OAuthValidatePayload:
         resp = await self._oauth_validate(token)
-        return self.build_model(OAuthValidatePayload, data=resp)
+        return self.build_model(OAuthValidatePayload, data=resp, key=None)
 
     async def _oauth_refresh(self, **kwargs: Unpack[OAuthRefreshRequestT]) -> OAuthRefreshResponseT:
         # NOTE: Can fail with 401; refresh_token is no longer valid
         # NOTE: 400 (Bad Request) is a custom payload response; invalid refresh_token
         # NOTE: client_secret is not required; public apps
-        route = Route("POST", "oauth2/token", params=kwargs, use_id=True, encoded=True)  # type: ignore[arg-type]
+        route = Route("POST", "oauth2/token", params=kwargs, use_id=True, encoded=True)
 
         try:
             return await self.request_json(route)
@@ -167,32 +177,32 @@ class HTTPClient:
 
     async def oauth_refresh(self, **kwargs: Unpack[OAuthRefreshRequestT]) -> OAuthRefreshPayload:
         resp = await self._oauth_refresh(**kwargs)
-        return self.build_model(OAuthRefreshPayload, data=resp)
+        return self.build_model(OAuthRefreshPayload, data=resp, key=None)
 
     async def _oauth_fetch_user_token(self, **kwargs: Unpack[OAuthAuthFlowRequestT]) -> OAuthAuthFlowResponseT:
-        route = Route("POST", "oauth2/token", params=kwargs, use_id=True, encoded=True)  # type: ignore[arg-type]
+        route = Route("POST", "oauth2/token", params=kwargs, use_id=True, encoded=True)
         return await self.request_json(route)
 
     async def oauth_fetch_user_token(self, **kwargs: Unpack[OAuthAuthFlowRequestT]) -> OAuthAuthFlowPayload:
         resp = await self._oauth_fetch_user_token(**kwargs)
-        return self.build_model(OAuthAuthFlowPayload, data=resp)
+        return self.build_model(OAuthAuthFlowPayload, data=resp, key=None)
 
     async def _oauth_fetch_client_credentials(
         self, **kwargs: Unpack[OAuthClientCredentialsRequestT]
     ) -> OAuthClientCredentialsResponseT:
-        route = Route("POST", "oauth2/token", params=kwargs, use_id=True, encoded=True)  # type: ignore[arg-type]
+        route = Route("POST", "oauth2/token", params=kwargs, use_id=True, encoded=True)
         return await self.request_json(route)
 
     async def oauth_fetch_client_credentials(
         self, **kwargs: Unpack[OAuthClientCredentialsRequestT]
     ) -> OAuthClientCredentialsPayload:
         resp = await self._oauth_fetch_client_credentials(**kwargs)
-        return self.build_model(OAuthClientCredentialsPayload, data=resp)
+        return self.build_model(OAuthClientCredentialsPayload, data=resp, key=None)
 
     async def oauth_revoke_token(self, **kwargs: Unpack[OAuthRevokeRequestT]) -> None:
         # NOTE: 400 Bad Request if the client ID is valid but the access token is not.
         # NOTE: 404 Not Found if the client ID is not valid.
-        route = Route("POST", "oauth2/revoke", params=kwargs, use_id=True, encoded=True)  # type: ignore[arg-type]
+        route = Route("POST", "oauth2/revoke", params=kwargs, use_id=True, encoded=True)
         return await self.request_json(route)
 
     async def _oauth_dcf(self) -> ...: ...
@@ -263,18 +273,37 @@ class HTTPClient:
     async def get_clips_download(self) -> ...: ...
 
     # -- Conduits --
-    async def get_conduits(self) -> ...: ...
-    async def create_conduits(self) -> ...: ...
+    async def _get_conduits(self) -> GetConduitsResponseT:
+        route = Route("GET", "eventsub/conduits")
+        return await self.request_json(route)
+
+    async def get_conduits(self) -> list[Conduit]:
+        resp = await self._get_conduits()
+        return self.build_model(Conduit, data=resp)
+
+    async def _create_conduits(self, **kwargs: Unpack[CreateConduitsRequestT]) -> CreateConduitsResponseT:
+        route = Route("POST", "eventsub/conduits")
+        return await self.request_json(route)
+
+    async def create_conduits(self, **kwargs: Unpack[CreateConduitsRequestT]) -> list[Conduit]:
+        resp = await self._create_conduits(**kwargs)
+        return self.build_model(Conduit, data=resp)
 
     async def _update_conduits(self, **kwargs: Unpack[UpdateConduitsRequestT]) -> UpdateConduitsResponseT:
         route = Route("PATCH", "eventsub/conduits", json=kwargs)
         return await self.request_json(route)
 
-    async def update_conduits(self, **kwargs: Unpack[UpdateConduitsRequestT]) -> Conduit:
+    async def update_conduits(self, **kwargs: Unpack[UpdateConduitsRequestT]) -> list[Conduit]:
         resp: UpdateConduitsResponseT = await self._update_conduits(**kwargs)
         return self.build_model(Conduit, data=resp)
 
-    async def delete_conduit(self) -> ...: ...
+    async def delete_conduit(self, **kwargs: Unpack[DeleteConduitsRequestT]) -> None:
+        # NOTE: 400 Bad Request	The id query parameter is required.
+        # NOTE: 401 Unauthenticated	Authorization header required with an app access token.
+        # NOTE: 404 Conduit not found; Conduit’s owner must match the client ID in the access token.
+        route = Route("DELETE", "eventsub/conduits", params=kwargs)
+        return await self.request(route)
+
     async def get_conduit_shards(self) -> ...: ...
     async def update_conduit_shards(self) -> ...: ...
 
