@@ -32,7 +32,7 @@ type ParamMappingT = MutableMapping[str, Any]
 class APIRequestKwargs(TypedDict, total=False):
     headers: dict[str, str]
     data: dict[str, Any]
-    params: ParamMappingT
+    params: Any
     json: Any
     token_for: Any  # TODO
 

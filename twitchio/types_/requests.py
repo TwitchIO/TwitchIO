@@ -57,3 +57,11 @@ class OAuthAuthFlowRequestT(TypedDict):
 class UpdateConduitsRequestT(TypedDict):
     id: str
     shard_count: int
+
+
+class CreateConduitsRequestT(TypedDict):
+    shard_count: int
+
+
+class DeleteConduitsRequestT(TypedDict):
+    id: str

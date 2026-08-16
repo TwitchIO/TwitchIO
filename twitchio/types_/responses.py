@@ -62,9 +62,11 @@ class OAuthAuthFlowResponseT(TypedDict):
 
 
 # ---- CONDUITS ----
-class UpdateConduitsDataT(TypedDict):
+class ConduitsDataT(TypedDict):
     id: str
     shard_count: int
 
 
-type UpdateConduitsResponseT = Payload[UpdateConduitsDataT]
+type UpdateConduitsResponseT = Payload[ConduitsDataT]
+type GetConduitsResponseT = Payload[ConduitsDataT]
+type CreateConduitsResponseT = Payload[ConduitsDataT]
