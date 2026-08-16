@@ -21,18 +21,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from typing import Any, Literal, TypedDict
 
 
 type HTTPMethodT = Literal["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD", "CONNECT", "TRACE"]
 type ParamMappingT = MutableMapping[str, Any]
+type ParamMappingInputT = Mapping[str, Any]
 
 
 class APIRequestKwargs(TypedDict, total=False):
     headers: dict[str, str]
     data: dict[str, Any]
-    params: Any
+    params: ParamMappingInputT
     json: Any
     token_for: Any  # TODO
 

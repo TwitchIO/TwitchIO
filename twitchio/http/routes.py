@@ -36,7 +36,7 @@ from ..utils import MISSING
 if TYPE_CHECKING:
     from aiohttp import ClientResponse
 
-    from ..types_.http import APIRequestKwargs, HTTPMethodT, ParamMappingT
+    from ..types_.http import APIRequestKwargs, HTTPMethodT, ParamMappingInputT, ParamMappingT
     from .clients import HTTPClient
 
 
@@ -97,7 +97,7 @@ class Route:
         encoded: bool = False,
         **kwargs: Unpack[APIRequestKwargs],
     ) -> None:
-        self.params: Any = kwargs.pop("params", {})
+        self.params: ParamMappingT = dict(kwargs.pop("params", {}))
         self.json: Any = kwargs.get("json", {})
         self.headers: dict[str, str] = kwargs.get("headers", {})
         self.token_for: str = str(kwargs.get("token_for", ""))
@@ -140,7 +140,7 @@ class Route:
                     del self.params[key]
                 continue
 
-            if isinstance(value, (str, int)):
+            if isinstance(value, str | int):
                 url += f"{key}={self.encode(str(value), safe='+', plus=True)}&"
             elif duplicate_key:
                 for v in value:
@@ -168,7 +168,7 @@ class Route:
         """Property returning the URL used to make a request without query parameters."""
         return self._base_url
 
-    def update_params(self, params: ParamMappingT, *, remove_none: bool = True) -> str:
+    def update_params(self, params: ParamMappingInputT, *, remove_none: bool = True) -> str:
         self.params.update(params)
         self._url = self.build_url(remove_none=remove_none)
 
@@ -253,5 +253,5 @@ class RequestManager:
         if not token or token is MISSING:
             raise MissingTokenError("No valid token available for this request.")
 
-        headers.update({"Authorization": f"Bearer {token}"})
+        headers["Authorization"] = f"Bearer {token}"
         route.update_headers(headers)
