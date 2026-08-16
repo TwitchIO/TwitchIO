@@ -109,7 +109,7 @@ class _BaseSubscription[T]:
             raise ValueError(f"Unexpected condition keyword argument(s) for {type(self).__name__}: {names}")
 
     def route(self) -> Route:
-        return Route(self.path, method=self.method, data=self._data)
+        return Route(self.method, self.path, data=self._data)
 
     @property
     def condition(self) -> T:

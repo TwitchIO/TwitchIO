@@ -300,7 +300,7 @@ class HTTPClient:
     async def delete_conduit(self, **kwargs: Unpack[DeleteConduitsRequestT]) -> None:
         # NOTE: 400 Bad Request	The id query parameter is required.
         # NOTE: 401 Unauthenticated	Authorization header required with an app access token.
-        # NOTE: 404 Conduit not found; Conduit’s owner must match the client ID in the access token.
+        # NOTE: 404 Conduit not found; Conduit's owner must match the client ID in the access token.
         route = Route("DELETE", "eventsub/conduits", params=kwargs)
         return await self.request(route)
 
