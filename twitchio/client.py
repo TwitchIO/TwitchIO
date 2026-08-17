@@ -918,7 +918,7 @@ class Client:
                 # Only wait for a message sent by "chillymosh"
                 return payload.chatter.name == "chillymosh"
 
-            payload: twitchio.ChatMessage = await client.wait_for("chat_message", predicate=predicate)
+            payload: twitchio.ChatMessage = await client.wait_for("message", predicate=predicate)
             print(f"Chillymosh said: {payload.text}")
 
 
