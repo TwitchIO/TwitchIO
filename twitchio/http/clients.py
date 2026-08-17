@@ -23,6 +23,7 @@ SOFTWARE.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import sys
 from functools import cached_property
@@ -77,7 +78,7 @@ class HTTPClient:
         LOGGER.debug("Completed setup for %s.", type(self).__qualname__)
 
     def cleanup(self) -> None:
-        if not self._user_session:
+        if not self._user_session and self._session.closed:
             self._session = MISSING
 
         self._has_setup = False
@@ -89,13 +90,27 @@ class HTTPClient:
         await self._manager.close()
         self.cleanup()
 
+    @staticmethod
+    async def json_or_text(resp: aiohttp.ClientResponse, /) -> dict[str, Any] | str:
+        text = await resp.text(encoding="UTF-8")
+
+        try:
+            if resp.headers["content-type"] == "application/json":
+                return JSON_LOADS(text)
+        except KeyError:
+            pass
+
+        return text
+
     async def request(self, route: Route) -> Any:
         failed: int | None = None
 
         if not self._has_setup:
             await self.setup()
 
-        self._manager.update_route(route, extras=self.headers)
+        container = self._manager.update_route(route, extras=self.headers) or self._manager._app_token
+        limiter = container.bucket
+        await limiter.acquire(route.cost)
 
         while True:
             method = route.method
@@ -103,12 +118,15 @@ class HTTPClient:
 
             try:
                 async with self._session.request(method, url, headers=route.headers, json=route.json or None) as resp:
+                    limiter.update(resp.headers)
+                    data = await self.json_or_text(resp)
+
                     status = resp.status
                     if status == 204:
                         return
 
                     if 200 <= status < 300:
-                        return await resp.text()
+                        return data
 
                     if failed:
                         if failed != status:
@@ -119,18 +137,24 @@ class HTTPClient:
                     await self._manager.handle_error_code(route, resp=resp, status=status)
                     failed = status
 
-            except aiohttp.ClientConnectionError:
-                # TODO: ...
-                raise
+            except OSError as e:
+                # Peer reset errors
+                if e.errno not in (54, 10054):
+                    raise
+
+                sleep = route.update_retries()
+                if sleep is None:
+                    raise
+
+                await asyncio.sleep(sleep)
 
     async def request_json(self, route: Route) -> Any:
         route.headers.update({"Accept": "application/json"})
+        return await self.request(route)
 
-        text = await self.request(route)
-        if not text:
-            return  # Some routes return 200 (No Body) + JSON on errors
-
-        return JSON_LOADS(text)
+        # NOTE: Needed?
+        # if isinstance(data, str):
+        #     raise # TODO: ...
 
     async def request_paginated(self, route: Route, *, type: ..., nested_key: str = MISSING) -> ...:
         while True:

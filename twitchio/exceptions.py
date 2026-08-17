@@ -29,8 +29,11 @@ __all__ = (
     "MissingConditionError",
     "MissingTokenError",
     "NotFoundError",
+    "RatelimitOverflowError",
+    "RatelimitedError",
     "SubscriptionException",
     "TwitchIOException",
+    "TwitchServerError",
     "UnauthorizedError",
     "WebsocketConnectionError",
     "WebsocketException",
@@ -44,6 +47,9 @@ class TwitchIOException(Exception): ...
 
 # HTTP
 class HTTPException(TwitchIOException): ...
+
+
+class TwitchServerError(HTTPException): ...
 
 
 class MissingTokenError(HTTPException): ...
@@ -61,6 +67,18 @@ class NotFoundError(HTTPException): ...
 class BadRequestError(HTTPException): ...
 
 
+# Ratelimits
+class RatelimitedError(HTTPException): ...
+
+
+class RatelimitOverflowError(TwitchIOException):
+    def __init__(self, waiters: int, limit: int) -> None:
+        super().__init__(f"Ratelimited (slow down): ({waiters}) requests are currently waiting [max: {limit}]")
+        self.waiters = waiters
+        self.limit = limit
+
+
+# ...
 class MissingCLIParamError(TwitchIOException): ...
 
 
