@@ -30,9 +30,10 @@ from .base import BaseModel
 
 if TYPE_CHECKING:
     from ..types_.eventsub import ConduitData
+    from ..types_.responses import UpdateConduitsShardsError, UpdateConduitsShardsResponseT
 
 
-__all__ = ("Conduit", "ConduitShard")
+__all__ = ("Conduit", "ConduitShard", "UpdatedShardPayload")
 
 
 class Conduit(BaseModel):
@@ -63,5 +64,13 @@ class Conduit(BaseModel):
     async def update_shards(self) -> ...: ...
 
 
-class ConduitShard:
+class ConduitShard(BaseModel):
     __slots__ = ()
+
+
+class UpdatedShardPayload(BaseModel):
+    __slots__ = ("errors", "shards")
+
+    def __init__(self, **data: Unpack[UpdateConduitsShardsResponseT]) -> None:
+        self.shards: list[ConduitShard] = [ConduitShard(**i) for i in data["data"]]
+        self.errors: list[UpdateConduitsShardsError] = data["errors"]

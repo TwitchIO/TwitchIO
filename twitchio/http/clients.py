@@ -170,7 +170,8 @@ class HTTPClient:
         if key is None:
             return model(**data, http_=self)
 
-        return [model(**inner, http_=self) for inner in data[key]]
+        inner = data.pop(key)
+        return [model(**i, http_=self, **data) for i in inner]
 
     # async def request_asset_head(self) -> ...: ...
 
@@ -329,7 +330,14 @@ class HTTPClient:
         return await self.request(route)
 
     async def get_conduit_shards(self) -> ...: ...
-    async def update_conduit_shards(self) -> ...: ...
+
+    async def _update_conduit_shards(self, **kwargs: Unpack[UpdateConduitsShardsRequestT]) -> UpdateConduitsShardsResponseT:
+        route = Route("PATCH", "eventsub/conduits/shards", could_404=True)
+        return await self.request_json(route)
+
+    async def update_conduit_shards(self, **kwargs: Unpack[UpdateConduitsShardsRequestT]) -> UpdatedShardPayload:
+        resp: UpdateConduitsShardsResponseT = await self._update_conduit_shards(**kwargs)
+        return UpdatedShardPayload(http_=self, **resp)  # type: ignore[arg-type]
 
     # -- CCLs --
     async def get_content_classification_labels(self) -> ...: ...

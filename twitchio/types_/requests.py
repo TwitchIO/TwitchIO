@@ -21,7 +21,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from collections.abc import Sequence
 from typing import Any, Literal, NotRequired, TypedDict
+
+from .eventsub import ShardUpdateTransport
 
 
 # ---- OAuth ----
@@ -65,3 +68,8 @@ class CreateConduitsRequestT(TypedDict):
 
 class DeleteConduitsRequestT(TypedDict):
     id: str
+
+
+class UpdateConduitsShardsRequestT(TypedDict):
+    conduit_id: str
+    shards: Sequence[ShardUpdateTransport]

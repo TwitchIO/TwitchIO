@@ -23,14 +23,14 @@ SOFTWARE.
 
 from typing import Literal, TypedDict
 
+from .eventsub import ShardUpdateRequest
+
 
 class Payload[T](TypedDict):
     data: list[T]
 
 
 # ---- OAUTH ----
-
-
 class OAuthValidateResponseT(TypedDict):
     client_id: str
     login: str | None  # User | App
@@ -65,6 +65,16 @@ class OAuthAuthFlowResponseT(TypedDict):
 class ConduitsDataT(TypedDict):
     id: str
     shard_count: int
+
+
+class UpdateConduitsShardsError(TypedDict):
+    id: str
+    message: str
+    code: Literal["invalid_parameter", "internal_error"]
+
+
+class UpdateConduitsShardsResponseT(Payload[ShardUpdateRequest]):
+    errors: list[UpdateConduitsShardsError]
 
 
 type UpdateConduitsResponseT = Payload[ConduitsDataT]
