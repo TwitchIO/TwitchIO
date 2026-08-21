@@ -1281,7 +1281,7 @@ class ChatMessageFragment:
     ----------
     text: str
         The chat message in plain text.
-    type: typing.Literal["text", "cheermote", "emote", "mention"]
+    type: typing.Literal["text", "cheermote", "emote", "mention", "gif"]
         The type of message fragment. Possible values:
 
         - text
@@ -1296,7 +1296,7 @@ class ChatMessageFragment:
         Cheermote data if a cheermote is sent.
     emote: ChatMessageEmote | None
         Emote data if a cheermote is sent.
-    gif: ChatMessageGifData | None
+    gif: ChatMessageGif | None
         Gif data if a gif is sent.
     """
 
@@ -1314,7 +1314,7 @@ class ChatMessageFragment:
         emote = data.get("emote")
         self.emote: ChatMessageEmote | None = ChatMessageEmote(emote, http=http) if emote else None
         gif: ChatMessageGifData | None = data.get("gif")
-        self.gif: Asset | None = Asset(gif["url"], http=http) if gif else None
+        self.gif: ChatMessageGif | None = ChatMessageGif(gif, http=http) if gif else None
 
     def __repr__(self) -> str:
         return f"<ChatMessageFragment type={self.type} text={self.text}>"
