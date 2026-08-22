@@ -6,6 +6,12 @@
 Changelog
 ##########
 
+3.3.3
+=======
+- twitchio.eventsub
+    - Bug fixes
+        - :attr:`~twitchio.ChatMessageFragment.gif` now correctly returns an optional :class:`~twitchio.ChatMessageGif``
+
 3.3.1 - 3.3.2
 ==============
 - twitchio
