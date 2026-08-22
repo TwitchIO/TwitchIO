@@ -435,8 +435,8 @@ class CustomRewardRedemption:
         """
         data = await self._http.patch_custom_reward_redemption(
             broadcaster_id=self.reward.broadcaster.id,
-            id=self.reward.broadcaster.id,
-            token_for=self,
+            id=self.id,
+            token_for=self.reward.broadcaster.id,
             reward_id=self.reward.id,
             status="FULFILLED",
         )
