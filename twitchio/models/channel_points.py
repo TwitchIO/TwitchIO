@@ -390,6 +390,8 @@ class CustomRewardRedemption:
 
     Attributes
     -----------
+    broadcaster: PartialUser
+        The broadcaster whose channel where the reward was redeemed.
     id: str
         The ID that uniquely identifies this redemption.
     status: typing.Literal["CANCELED", "FULFILLED", "UNFULFILLED"]
@@ -400,9 +402,11 @@ class CustomRewardRedemption:
         This is the reward that the redemption is from.
     user: PartialUser
         The user that made the redemption.
+    user_input: str
+        The user input provided. Empty string if not provided.
     """
 
-    __slots__ = ("_http", "id", "redeemed_at", "reward", "status", "user")
+    __slots__ = ("_http", "broadcaster", "id", "redeemed_at", "reward", "status", "user", "user_input")
 
     def __init__(
         self,
@@ -415,7 +419,11 @@ class CustomRewardRedemption:
         self.redeemed_at: datetime.datetime = parse_timestamp(data["redeemed_at"])
         self.reward: CustomReward = parent_reward
         self._http: HTTPClient = http
-        self.user: PartialUser = PartialUser(data["user_id"], data["user_login"], data["broadcaster_name"], http=self._http)
+        self.user: PartialUser = PartialUser(data["user_id"], data["user_login"], data["user_name"], http=self._http)
+        self.broadcaster: PartialUser = PartialUser(
+            data["broadcaster_id"], data["broadcaster_login"], data["broadcaster_name"], http=self._http
+        )
+        self.user_input: str = data["user_input"]
 
     def __repr__(self) -> str:
         return f"<CustomRewardRedemption id={self.id} status={self.status} redeemed_at={self.redeemed_at}>"
