@@ -14,6 +14,7 @@ Changelog
         - Added :attr:`~twitchio.CustomRewardRedemption.user_input` to :class:`~twitchio.CustomRewardRedemption`.
     - Bug fixes
         - Fix typo leading to :attr:`~twitchio.CustomRewardRedemption.user` having incorrect `display_name`.
+        - Fixed :meth:`~twitchio.CustomRewardRedemption.fulfill` sending the broadcaster ID instead of the redemption ID and an incorrect ``token_for``.
 - twitchio.eventsub
     - Bug fixes
         - :attr:`~twitchio.ChatMessageFragment.gif` now correctly returns an optional :class:`~twitchio.ChatMessageGif`
