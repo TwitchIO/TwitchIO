@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 __all__ = ("Conduit", "ConduitShard", "UpdatedShardPayload")
 
 
-@model_transform()
+@model_transform(frozen=False)
 class Conduit(BaseModel):
     __slots__ = ("_id", "_shard_count")
 
