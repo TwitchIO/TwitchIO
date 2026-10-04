@@ -25,7 +25,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self, Unpack
 
-from .base import BaseModel
+from .base import BaseModel, model_transform
 
 
 if TYPE_CHECKING:
@@ -36,24 +36,16 @@ if TYPE_CHECKING:
 __all__ = ("Conduit", "ConduitShard", "UpdatedShardPayload")
 
 
+@model_transform()
 class Conduit(BaseModel):
     __slots__ = ("_id", "_shard_count")
 
     def __init__(self, **data: Unpack[ConduitData]) -> None:
-        self._id = data["id"]
-        self._shard_count = data["shard_count"]
+        self._id: str = data["id"]
+        self._shard_count: int = data["shard_count"]
 
     def __repr__(self) -> str:
         return f"Conduit(id={self._id}, shard_count={self._shard_count})"
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Conduit):
-            return NotImplemented
-
-        return other._id == self._id
-
-    def __hash__(self) -> int:
-        return hash(self._id)
 
     def __int__(self) -> int:
         return self._shard_count
@@ -99,7 +91,7 @@ class Conduit(BaseModel):
     async def update_shards(self) -> ...: ...
 
 
-# TODO: ...
+@model_transform()
 class ConduitShard(BaseModel):
     __slots__ = ("id", "status", "transport")
 
@@ -109,9 +101,10 @@ class ConduitShard(BaseModel):
         self.transport = data["transport"]  # TODO: ...
 
 
+@model_transform(has_id=False)
 class UpdatedShardPayload(BaseModel):
     __slots__ = ("errors", "shards")
 
     def __init__(self, **data: Unpack[UpdateConduitsShardsResponseT]) -> None:
-        self.shards: list[ConduitShard] = [ConduitShard(**i, http_=self._http) for i in data["data"]]  # type: ignore[arg-type]
+        self.shards: list[ConduitShard] = [ConduitShard(**i) for i in data["data"]]  # type: ignore[arg-type]
         self.errors: list[UpdateConduitsShardsError] = data["errors"]

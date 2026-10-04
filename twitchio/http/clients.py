@@ -27,7 +27,7 @@ import asyncio
 import logging
 import sys
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, TypeVar, Unpack, overload
+from typing import TYPE_CHECKING, Any, Self, TypeVar, Unpack, overload
 
 import aiohttp
 
@@ -53,6 +53,12 @@ ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
 class HTTPClient:
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
+        self = super().__new__(cls)
+
+        setattr(self, "_BaseModel__http", self)
+        return self
+
     def __init__(
         self,
         *,
@@ -202,10 +208,10 @@ class HTTPClient:
 
     def build_model(self, model: type[ModelT], *, data: Any, key: str | None = "data") -> ModelT | list[ModelT]:
         if key is None:
-            return model(**data, http_=self)
+            return model(**data)
 
         inner = data.pop(key)
-        return [model(**i, http_=self, **data) for i in inner]
+        return [model(**i, **data) for i in inner]
 
     # async def request_asset_head(self) -> ...: ...
 
@@ -373,7 +379,7 @@ class HTTPClient:
 
     async def update_conduit_shards(self, **kwargs: Unpack[UpdateConduitsShardsRequestT]) -> UpdatedShardPayload:
         resp: UpdateConduitsShardsResponseT = await self._update_conduit_shards(**kwargs)
-        return UpdatedShardPayload(http_=self, **resp)  # type: ignore[arg-type]
+        return UpdatedShardPayload(**resp)
 
     # -- CCLs --
     async def get_content_classification_labels(self) -> ...: ...
