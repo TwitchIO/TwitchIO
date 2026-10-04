@@ -61,9 +61,7 @@ class Client:
         self._sockets = WebsocketManager(self)
 
         self._raw_events = options.get("enable_raw_events", False)
-
         self.__stop_event = asyncio.Event()
-        self._closed: bool = False
 
     @property
     def dispatcher(self) -> EventDispatcher:
@@ -87,8 +85,14 @@ class Client:
         await self.__stop_event.wait()
 
     async def login(self) -> None:
+        if self.__stop_event.is_set():
+            raise RuntimeError(f"Cannot start {type(self).__name__} after it has been stopped.")
+
         if not self._http._has_setup:
             await self._http.setup()
+
+        if not self._sockets._has_setup:
+            await self._sockets.setup()
 
     def run(
         self,
@@ -106,14 +110,14 @@ class Client:
             pass
 
     async def close(self) -> None:
-        if self._closed:
+        if self.__stop_event.is_set():
             return
 
         await self._http.close()
         await self._sockets.shutdown()
         self._events.cleanup()
 
-        self._closed = True
+        self.__stop_event.set()
 
     async def test(self) -> ...:
         await self._sockets.open_socket()

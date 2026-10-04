@@ -114,13 +114,18 @@ class WebsocketManager:
             "session_welcome": self._dispatch_session_welcome,
             "revocation": self._dispatch_revocation,
         }
-        self._conduit_handler_task = asyncio.create_task(self._conduit_loss_handler())
+        self._conduit_handler_task: asyncio.Task[None] | None = None
+        self._has_setup: bool = False
 
     async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.shutdown()
+
+    async def setup(self) -> None:
+        self._conduit_handler_task = asyncio.create_task(self._conduit_loss_handler())
+        self._has_setup = True
 
     @property
     def sockets(self) -> MappingProxyType[str, Websocket]:
