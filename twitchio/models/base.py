@@ -62,7 +62,6 @@ def _hash_id(self: Any) -> int:
 
 class BaseModel:
     __slots__ = ()
-    _thing: int
     __http: ClassVar[HTTPClient]
 
     @property
