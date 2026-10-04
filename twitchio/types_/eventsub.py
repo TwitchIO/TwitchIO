@@ -33,6 +33,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "AnyEvent",
+    "AnySubscription",
     "AutomodBlockedTermData",
     "AutomodMessageHoldEvent",
     "AutomodMessageHoldV2Event",
@@ -156,6 +157,7 @@ __all__ = (
     "RevocationPayload",
     "RevocationSubscription",
     "RevocationTransport",
+    "ShardData",
     "ShardStatus",
     "ShieldModeBeginEvent",
     "ShieldModeEndEvent",
@@ -165,6 +167,8 @@ __all__ = (
     "StreamOnlineEvent",
     "SubscribeEmoteData",
     "SubscribeMessageData",
+    "SubscriptionCreateRequest",
+    "SubscriptionResponseT",
     "SuspiciousMessageData",
     "UserAuthorizationGrantEvent",
     "UserAuthorizationRevokeEvent",
@@ -213,8 +217,6 @@ class SubscriptionCreateRequest(TypedDict):
     version: str
     condition: AnyCondition
     transport: SubscriptionCreateTransport
-    session_id: NotRequired[str]
-    conduit_id: NotRequired[str]
 
 
 class BaseBroadcasterEvent(TypedDict):
@@ -287,7 +289,7 @@ class AnySubscription[T](BaseSubscription[T]):
     transport: WebhookTransport | WebsocketTransport | ConduitTransport
 
 
-class SubscriptionResponse(TypedDict):
+class SubscriptionResponseT(TypedDict):
     data: list[AnySubscription[AnyCondition]]
     total: int
     total_cost: int

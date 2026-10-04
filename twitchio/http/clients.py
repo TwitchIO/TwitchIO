@@ -43,7 +43,7 @@ from .routes import RequestManager, Route
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from twitchio.types_.eventsub import ShardData
+    from twitchio.types_.eventsub import *
     from twitchio.types_.requests import *
     from twitchio.types_.responses import *
 
@@ -403,7 +403,10 @@ class HTTPClient:
     async def update_extension_bits_product(self) -> ...: ...
 
     # -- EventSub --
-    async def create_eventsub_subscription(self) -> ...: ...
+    async def create_eventsub_subscription(self, **kwargs: Unpack[SubscriptionCreateRequest]) -> SubscriptionResponseT:
+        route = Route("POST", "eventsub/subscriptions", json=kwargs)
+        return await self.request_json(route)
+
     async def delete_eventsub_subscription(self) -> ...: ...
     async def get_eventsub_subscriptions(self) -> ...: ...
 

@@ -27,6 +27,7 @@ import asyncio
 from typing import TYPE_CHECKING, Any, Self, Unpack
 
 from .dispatcher import EventDispatcher
+from .enums import TransportMethod
 from .http import HTTPClient
 from .utils import MISSING
 from .websockets import WebsocketManager
@@ -35,7 +36,9 @@ from .websockets import WebsocketManager
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from .eventsub import Subscription
     from .types_.clients import ClientOptionsT
+    from .types_.eventsub import SubscriptionCreateRequest, SubscriptionResponseT
 
 
 class Client:
@@ -119,8 +122,58 @@ class Client:
 
         self.__stop_event.set()
 
-    async def test(self) -> ...:
-        await self._sockets.open_socket()
+    async def _subscribe(
+        self,
+        subscription: Subscription[Any],
+        *,
+        transport: TransportMethod,
+        session_id: str = MISSING,
+        conduit_id: str = MISSING,
+        callback: str = MISSING,
+        secret: str = MISSING,
+    ) -> SubscriptionResponseT:
+        if transport is TransportMethod.WEBSOCKET:
+            extras = {"session_id": session_id}
+        elif transport is TransportMethod.CONDUIT:
+            extras = {"conduit_id": conduit_id}
+        elif transport is TransportMethod.WEBHOOK:
+            extras = {"callback": callback, "secret": secret}
+
+        data: SubscriptionCreateRequest = {**subscription._data, "transport": {"method": transport.value, **extras}}  # type: ignore
+        return await self._http.create_eventsub_subscription(**data)
+
+    async def raw_subscribe_websocket(self, subscription: Subscription[Any], *, session_id: str) -> SubscriptionResponseT:
+        return await self._subscribe(
+            subscription,
+            transport=TransportMethod.WEBSOCKET,
+            session_id=session_id,
+        )
+
+    async def raw_subscribe_webhook(
+        self,
+        subscription: Subscription[Any],
+        *,
+        callback: str,
+        secret: str,
+    ) -> SubscriptionResponseT:
+        return await self._subscribe(
+            subscription,
+            transport=TransportMethod.WEBHOOK,
+            callback=callback,
+            secret=secret,
+        )
+
+    async def raw_subscribe_conduit(self, subscription: Subscription[Any], *, conduit_id: str) -> SubscriptionResponseT:
+        return await self._subscribe(
+            subscription,
+            transport=TransportMethod.CONDUIT,
+            conduit_id=conduit_id,
+        )
 
 
-class ManagedClient(Client): ...
+class ManagedClient(Client):
+    def __init__(self, **options: Unpack[ClientOptionsT]) -> None:
+        if options.get("dcf"):
+            raise RuntimeError("The 'dcf' option is not supported by ManagedClient.")
+
+        super().__init__(**options)
