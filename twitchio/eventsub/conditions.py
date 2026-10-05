@@ -94,6 +94,7 @@ __all__ = (
     "UserAuthorizationRevokeCT",
     "UserUpdateCT",
     "WhisperReceivedCT",
+    "_ConditionCT",
 )
 # TODO: Accept Partial/User etc objects??
 
@@ -156,6 +157,22 @@ class _BroadcasterRewardCT(_BroadcasterCT, _RewardCT):
 
 # -----------------------------------------------------------
 # Condition Payloads:
+
+
+class _ConditionCT(TypedDict, total=False):
+    broadcaster_user_id: str
+    broadcaster_id: str
+    moderator_user_id: str
+    user_id: str
+    reward_id: str
+    client_id: str
+    from_broadcaster_user_id: str
+    to_broadcaster_user_id: str
+    conduit_id: str
+    organization_id: str
+    category_id: str
+    campaign_id: str
+    extension_client_id: str
 
 
 type AnyCondition = (
