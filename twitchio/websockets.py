@@ -135,7 +135,7 @@ class WebsocketManager:
         return self._sockets.get(session_id)
 
     async def _conduit_loss_handler(self) -> ...:
-        wait = MIN_KEEP_ALIVE // 2
+        wait = MIN_KEEP_ALIVE // 5
 
         while True:
             await asyncio.sleep(wait)
@@ -314,7 +314,8 @@ class WebsocketManager:
         if self._conduit_handler_task:
             self._conduit_handler_task.cancel()
 
-    def _dispatch_notification(self, socket: Websocket, *, data: NotificationMessage, received_at: float) -> None: ...
+    def _dispatch_notification(self, socket: Websocket, *, data: NotificationMessage, received_at: float) -> None:
+        LOGGER.debug("Received 'notification' on %r: %s", socket, data)
 
     async def _dispatch_session_reconnect(self, socket: Websocket, *, data: ReconnectMessage, received_at: float) -> None:
         url = data["payload"]["session"]["reconnect_url"]
@@ -327,11 +328,14 @@ class WebsocketManager:
         socket._session_id = data["payload"]["session"]["id"]
         socket.set_ready()
 
+        if socket._conduit_id is not None:
+            # TODO: Note usecase here... || Consider renaming attrs/handlers...
+            self._disconnected.add(socket)
+
         if original is None:
             return
 
         if socket._shard_id is not None and socket._conduit_id is not None:
-            # TODO: ...
             ...
         else:
             # TODO: ... Re-subscribe to ES Subscriptions
