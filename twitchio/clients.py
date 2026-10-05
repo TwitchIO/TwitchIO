@@ -71,6 +71,7 @@ class Client:
         self._events = EventDispatcher()
         self._sockets = WebsocketManager(self)
 
+        self._has_setup: bool = False
         self._raw_events = options.get("enable_raw_events", False)
         self.__stop_event = asyncio.Event()
 
@@ -91,6 +92,10 @@ class Client:
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.close()
 
+    async def _setup(self) -> None: ...
+
+    async def setup(self) -> None: ...
+
     async def start(self) -> None:
         await self.login()
         await self.__stop_event.wait()
@@ -104,6 +109,11 @@ class Client:
 
         if not self._sockets._has_setup:
             await self._sockets.setup()
+
+        if not self._has_setup:
+            self._has_setup = True
+            await self._setup()
+            await self.setup()
 
     def run(
         self,
@@ -217,13 +227,17 @@ class ManagedClient(Client):
         if not conduit:
             LOGGER.info("No current Conduit found: Attempting to create a new one.")
             conduit = (await self._http.create_conduits(shard_count=2))[0]
-            LOGGER.info("New Conduit created: %s.", self._conduit.id)
+            LOGGER.info("New Conduit created: %s.", conduit.id)
 
         self._conduit = conduit
         await self._subscription_flow()
+        LOGGER.info("Successfully set up conduit: '%s'.", conduit.id)
 
     async def _subscription_flow(self) -> None:
+        LOGGER.debug("Starting subscription flow for conduit: '%s'.", self._conduit.id)
         current: list[Subscription[AnyCondition]] = []
+
+        LOGGER.debug("Fetching current subscriptions for conduit: '%s'.", self._conduit.id)
         async for page in self._http._get_eventsub_subscriptions(conduit_id=self._conduit.id):
             data = page["data"]
             current.extend(
@@ -234,4 +248,6 @@ class ManagedClient(Client):
         provided: set[Subscription[AnyCondition]] = set(self._subscriptions) if self._subscriptions is not MISSING else set()
         to_add = provided - unique
 
-        await self._conduit.subscribe(to_add)
+        if to_add:
+            LOGGER.info("Adding %d subscriptions for conduit: '%s'.", len(to_add), self._conduit.id)
+            await self._conduit.subscribe(to_add)

@@ -27,4 +27,4 @@ from . import (
     eventsub as eventsub,
     utils as utils,
 )
-from .clients import Client as Client
+from .clients import Client as Client, ManagedClient as ManagedClient
