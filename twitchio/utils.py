@@ -30,7 +30,7 @@ import sys
 from typing import Any
 
 
-__all__ = ("JSON_LOADS", "MISSING", "ColorFormatter", "ColourFormatter", "setup_logging")
+__all__ = ("DEFERRED", "JSON_LOADS", "MISSING", "ColorFormatter", "ColourFormatter", "setup_logging")
 
 
 try:
@@ -44,7 +44,7 @@ except ImportError:
 PY_314: bool = sys.version_info >= (3, 14)
 
 
-class _MissingSentinel:
+class _Sentinel:
     __slots__ = ()
 
     def __eq__(self, other: Any) -> bool:
@@ -60,7 +60,11 @@ class _MissingSentinel:
         return "..."
 
 
-MISSING: Any = _MissingSentinel()
+# Sentinel value indicating a missing value.
+MISSING: Any = _Sentinel()
+
+# Sentinel value indicating a deferred assignment.
+DEFERRED: Any = _Sentinel()
 
 
 def is_docker() -> bool:
