@@ -77,6 +77,9 @@ class _BaseSubscription[T]:
                     if get_origin(hint) is Required or (arg.__total__ and get_origin(hint) is not NotRequired)
                 )
 
+        if not cls.__condition_keys__:
+            cls.__condition_keys__ = frozenset(get_type_hints(_ConditionCT, include_extras=True))
+
         super().__init_subclass__(**kwargs)
 
     def __init__(self, *, condition: T, type: SubscriptionType, version: str) -> None:
