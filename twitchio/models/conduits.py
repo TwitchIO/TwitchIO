@@ -23,20 +23,37 @@ SOFTWARE.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, Unpack
+from typing import TYPE_CHECKING, Any, NamedTuple, Self, Unpack
 
+from ..exceptions import HTTPException
 from .base import BaseModel, model_transform
 
 
 if TYPE_CHECKING:
     from collections.abc import Collection
 
+    from twitchio.types_.eventsub import SubscriptionCreateRequest, SubscriptionCreateTransport
+
     from ..eventsub.subscriptions import Subscription
-    from ..types_.eventsub import ConduitData, ShardData
+    from ..types_.eventsub import AnyCondition, ConduitData, ShardData
     from ..types_.responses import UpdateConduitsShardsError, UpdateConduitsShardsResponseT
 
 
 __all__ = ("Conduit", "ConduitShard", "UpdatedShardPayload")
+
+
+class SubscriptionError(NamedTuple):
+    subscription: Subscription[AnyCondition]
+    error: HTTPException
+
+
+@model_transform(has_id=False)
+class SubscriptionResults(BaseModel):
+    __slots__ = ("errors", "successful")
+
+    def __init__(self, *, success: list[Subscription[AnyCondition]], errors: list[SubscriptionError]) -> None:
+        self.successful: list[Subscription[AnyCondition]] = success
+        self.errors: list[SubscriptionError] = errors
 
 
 @model_transform(frozen=False)
@@ -93,7 +110,29 @@ class Conduit(BaseModel):
 
     async def update_shards(self) -> ...: ...
 
-    async def subscribe(self, subscriptions: Collection[Subscription[Any]]) -> ...: ...
+    async def subscribe(self, subscriptions: Collection[Subscription[Any]]) -> SubscriptionResults:
+        transport: SubscriptionCreateTransport = {"method": "conduit", "conduit_id": self._id}
+
+        success: list[Subscription[Any]] = []
+        errors: list[SubscriptionError] = []
+
+        for sub in subscriptions:
+            data: SubscriptionCreateRequest = {
+                "type": sub.type,
+                "version": sub.version,
+                "condition": sub.condition,
+                "transport": transport,
+            }
+
+            try:
+                await self._http.create_eventsub_subscription(**data)
+            except HTTPException as e:
+                errors.append(SubscriptionError(subscription=sub, error=e))
+            else:
+                success.append(sub)
+
+        return SubscriptionResults(success=success, errors=errors)
+
     async def unsubscribe(self, subscriptions: Collection[Subscription[Any]]) -> ...: ...
 
 
