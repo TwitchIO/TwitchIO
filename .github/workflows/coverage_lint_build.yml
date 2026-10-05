@@ -16,16 +16,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Install uv and set Python
-        uses: astral-sh/setup-uv@v8.0.0
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-          version: "0.8.22"
+          version: "0.12.20"
 
       - name: Build wheel
         run: uv build --wheel
@@ -42,14 +42,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install uv and set Python
-        uses: astral-sh/setup-uv@v8.0.0
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           python-version: "3.13"
           enable-cache: true
-          version: "0.8.22"
+          version: "0.12.20"
 
       - name: Build sdist
         run: uv build --sdist
@@ -70,16 +70,16 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Install uv and set Python
-        uses: astral-sh/setup-uv@v8.0.0
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-          version: "0.8.22"
+          version: "0.12.20"
 
       - name: Install project and dev dependencies
         run: uv sync --group dev
@@ -99,16 +99,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Install uv and set Python
-        uses: astral-sh/setup-uv@v8.0.0
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           python-version: "3.13"
           enable-cache: true
-          version: "0.8.22"
+          version: "0.12.20"
 
       - name: Install project and dev dependencies
         run: uv sync --group dev --group docs
