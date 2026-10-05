@@ -38,6 +38,7 @@ __all__ = (
     "HTTPException",
     "MissingCLIParamError",
     "MissingConditionError",
+    "MissingConduitError",
     "MissingTokenError",
     "NotFoundError",
     "RatelimitOverflowError",
@@ -112,3 +113,6 @@ class SubscriptionException(TwitchIOException): ...
 
 
 class MissingConditionError(SubscriptionException): ...
+
+
+class MissingConduitError(TwitchIOException): ...
