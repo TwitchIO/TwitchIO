@@ -24,21 +24,29 @@ SOFTWARE.
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import TYPE_CHECKING, Any, Self, Unpack
 
 from .dispatcher import EventDispatcher
-from .enums import TransportMethod
+from .enums import SubscriptionType, TransportMethod
+from .eventsub import Subscription
+from .exceptions import *
 from .http import HTTPClient
-from .utils import MISSING
+from .utils import DEFERRED, MISSING
 from .websockets import WebsocketManager
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
-    from .eventsub import Subscription
+    from twitchio.eventsub.conditions import AnyCondition
+    from twitchio.models.conduits import Conduit
+
     from .types_.clients import ClientOptionsT
     from .types_.eventsub import SubscriptionCreateRequest, SubscriptionResponseT
+
+
+LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 class Client:
@@ -172,8 +180,58 @@ class Client:
 
 
 class ManagedClient(Client):
-    def __init__(self, **options: Unpack[ClientOptionsT]) -> None:
+    def __init__(
+        self,
+        conduit_id: str = MISSING,
+        subscriptions: Sequence[Subscription[Any]] = MISSING,
+        **options: Unpack[ClientOptionsT],
+    ) -> None:
         if options.get("dcf"):
             raise RuntimeError("The 'dcf' option is not supported by ManagedClient.")
 
         super().__init__(**options)
+        self._subscriptions: Sequence[Subscription[Any]] = subscriptions
+        self._conduit_id: str = conduit_id
+        self._conduit: Conduit = DEFERRED
+
+    async def _setup(self) -> None:
+        await self._setup_flow()
+
+    async def _setup_flow(self) -> None:
+        conduit: Conduit | None = None
+        conduits = await self._http.get_conduits()
+
+        for c in conduits:
+            if c.id == self._conduit_id:
+                conduit = c
+                break
+
+        if not conduit and self._conduit_id is not MISSING:
+            raise MissingConduitError(f"Conduit with ID {self._conduit_id} could not be found.")
+        elif conduit:
+            LOGGER.info("Provided Conduit found: '%s'. Attempting to take ownership.", conduit.id)
+        elif conduits:
+            conduit = conduits[0]
+            LOGGER.info("Conduit found: '%s'. Attempting to take ownership.", conduit.id)
+
+        if not conduit:
+            LOGGER.info("No current Conduit found: Attempting to create a new one.")
+            conduit = (await self._http.create_conduits(shard_count=2))[0]
+            LOGGER.info("New Conduit created: %s.", self._conduit.id)
+
+        self._conduit = conduit
+        await self._subscription_flow()
+
+    async def _subscription_flow(self) -> None:
+        current: list[Subscription[AnyCondition]] = []
+        async for page in self._http._get_eventsub_subscriptions(conduit_id=self._conduit.id):
+            data = page["data"]
+            current.extend(
+                Subscription(type=SubscriptionType(s["type"]), version=s["version"], condition=s["condition"]) for s in data
+            )
+
+        unique = set(current)
+        provided: set[Subscription[AnyCondition]] = set(self._subscriptions) if self._subscriptions is not MISSING else set()
+        to_add = provided - unique
+
+        await self._conduit.subscribe(to_add)

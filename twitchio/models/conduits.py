@@ -23,12 +23,15 @@ SOFTWARE.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, Unpack
+from typing import TYPE_CHECKING, Any, Self, Unpack
 
 from .base import BaseModel, model_transform
 
 
 if TYPE_CHECKING:
+    from collections.abc import Collection
+
+    from ..eventsub.subscriptions import Subscription
     from ..types_.eventsub import ConduitData, ShardData
     from ..types_.responses import UpdateConduitsShardsError, UpdateConduitsShardsResponseT
 
@@ -75,7 +78,7 @@ class Conduit(BaseModel):
 
     # TODO: Limit / status
     async def fetch_shards(self) -> list[ConduitShard]:
-        shards = [ConduitShard(**resp) async for resp in self._http._get_conduit_shards(conduit_id=self._id)]
+        shards = [ConduitShard(**resp) async for resp in self._http.get_conduit_shards(conduit_id=self._id)]
         return shards
 
     async def delete(self) -> None:
@@ -89,6 +92,9 @@ class Conduit(BaseModel):
         self._shard_count = count
 
     async def update_shards(self) -> ...: ...
+
+    async def subscribe(self, subscriptions: Collection[Subscription[Any]]) -> ...: ...
+    async def unsubscribe(self, subscriptions: Collection[Subscription[Any]]) -> ...: ...
 
 
 @model_transform()
