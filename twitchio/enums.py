@@ -83,7 +83,7 @@ class MessageType(enum.Enum):
     REVOCATION        = "revocation"
 
 
-class SubscriptionType(enum.Enum):
+class SubscriptionType(enum.StrEnum):
     """An enum of available EventSub subscription types.
 
     The value of each enum attribute will be the formal name sent and received to/from Twitch.
