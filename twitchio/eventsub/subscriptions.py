@@ -147,6 +147,15 @@ class Subscription[T](_BaseSubscription[T]):
     def __init__(self, *, condition: T, type: SubscriptionType, version: str) -> None:
         super().__init__(condition=condition, type=type, version=version)
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Subscription):
+            return NotImplemented
+
+        return self.type == other.type and self.version == other.version and self.condition == other.condition  # type: ignore[Reason: Subscription Generic is always AnyCondition]
+
+    def __hash__(self) -> int:
+        return hash((self.type, self.version, frozenset(self.condition.items())))  # type: ignore[Reason: Subscription Generic is always AnyCondition]
+
 
 class ChatMessageSubscription(Subscription[ChannelChatMessageCT]):
     _type: ClassVar[SubscriptionType] = SubscriptionType.ChannelChatMessage
