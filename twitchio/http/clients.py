@@ -56,7 +56,7 @@ class HTTPClient:
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         self = super().__new__(cls)
 
-        setattr(self, "_BaseModel__http", self)
+        setattr(BaseModel, "_BaseModel__http", self)
         return self
 
     def __init__(
