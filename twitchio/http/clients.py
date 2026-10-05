@@ -190,9 +190,20 @@ class HTTPClient:
         #     raise # TODO: ...
 
     async def request_paginated(self, route: Route) -> AsyncIterator[Any]:
+        max_pages = route.max_pages or float("inf")
+        max_results = route.max_results or float("inf")
+
         while True:
             resp = await self.request_json(route)
             yield resp
+
+            max_pages -= 1
+            if max_pages <= 0:
+                return
+
+            max_results -= len(resp.get("data", []))
+            if max_results <= 0:
+                return
 
             cursor = (resp.get("pagination") or {}).get("cursor")  # type: ignore
             if not cursor:
@@ -364,8 +375,7 @@ class HTTPClient:
         route = Route("DELETE", "eventsub/conduits", params=kwargs)
         return await self.request(route)
 
-    # TODO: ...
-    async def _get_conduit_shards(self, **kwargs: Unpack[GetConduitsShardsRequestT]) -> AsyncIterator[ShardData]:
+    async def get_conduit_shards(self, **kwargs: Unpack[GetConduitsShardsRequestT]) -> AsyncIterator[ShardData]:
         route = Route("GET", "eventsub/conduits/shards", params=kwargs)
         async for resp in self.request_paginated(route):
             yield resp
@@ -408,7 +418,14 @@ class HTTPClient:
         return await self.request_json(route)
 
     async def delete_eventsub_subscription(self) -> ...: ...
-    async def get_eventsub_subscriptions(self) -> ...: ...
+
+    async def _get_eventsub_subscriptions(
+        self,
+        **kwargs: Unpack[GetEventsubSubscriptionsRequestT],
+    ) -> AsyncIterator[SubscriptionResponseT]:
+        route = Route("GET", "eventsub/subscriptions", params=kwargs)
+        async for resp in self.request_paginated(route):
+            yield resp
 
     # -- Games --
     async def get_top_games(self) -> ...: ...

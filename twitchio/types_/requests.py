@@ -24,7 +24,7 @@ SOFTWARE.
 from collections.abc import Sequence
 from typing import Any, Literal, NotRequired, TypedDict
 
-from .eventsub import ShardUpdateTransport
+from .eventsub import ShardStatus, ShardUpdateTransport
 
 
 # ---- OAuth ----
@@ -96,3 +96,12 @@ class UpdateConduitsShardsRequestT(TypedDict):
 class GetConduitsShardsRequestT(TypedDict):
     conduit_id: str
     status: NotRequired[WebsocketStatusT]
+
+
+class GetEventsubSubscriptionsRequestT(TypedDict, total=False):
+    status: ShardStatus
+    type: str
+    user_id: str
+    subscription_id: str
+    conduit_id: str
+    after: str

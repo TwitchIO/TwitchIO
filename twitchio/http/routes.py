@@ -88,6 +88,8 @@ class Route:
         "encoded",
         "headers",
         "json",
+        "max_pages",
+        "max_results",
         "method",
         "no_app",
         "packed",
@@ -111,6 +113,8 @@ class Route:
         could_404: bool = False,
         encoded: bool = False,
         cost: int = 1,
+        max_pages: int | None = None,
+        max_results: int | None = None,
         **kwargs: Unpack[APIRequestKwargs],
     ) -> None:
         self.params: ParamMappingT = dict(kwargs.pop("params", {}))
@@ -133,6 +137,8 @@ class Route:
         self._retries: int = REQUEST_RETRIES
         self.cost = cost
         self.token: TokenContainer | None = None
+        self.max_pages: int | None = None
+        self.max_results: int | None = None
 
     def __str__(self) -> str:
         return str(self._url)
