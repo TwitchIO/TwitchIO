@@ -21,6 +21,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .conduits import *
-from .message import *
-from .oauth import *
+from ..enums import SubscriptionType
+from .base import IdentifiableBaseModel, model_transform
+
+
+__all__ = ("Message", "PartialMessage")
+
+
+@model_transform()
+class PartialMessage(IdentifiableBaseModel):
+    __id_kind__ = "Message"
+    __slots__ = ("id",)
+
+
+@model_transform()
+class Message(PartialMessage):
+    __subscription_type__ = SubscriptionType.ChannelChatMessage
+    __event_name__ = "message"
+    __id_kind__ = "Message"
+    __slots__ = ("_data", "id")
+
+    def __init__(self, data: ...) -> None:
+        super().__init__()
+        self._data = data

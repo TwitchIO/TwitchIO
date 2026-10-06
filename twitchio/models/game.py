@@ -21,6 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .conduits import *
-from .message import *
-from .oauth import *
+
+class PartialGame:
+    __slots__ = ()
+    __id_kind__ = "Game"
+
+
+class Game:
+    __slots__ = ()
+    __id_kind__ = "Game"

@@ -21,6 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .conduits import *
-from .message import *
-from .oauth import *
+
+class PartialStream:
+    __slots__ = ()
+    __id_kind__ = "Stream"
+
+
+class Stream:
+    __slots__ = ()
+    __id_kind__ = "Stream"

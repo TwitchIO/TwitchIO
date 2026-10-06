@@ -21,6 +21,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from .conduits import *
-from .message import *
-from .oauth import *
+from ..utils import MISSING
+from .base import IdentifiableBaseModel
+
+
+class PartialUser(IdentifiableBaseModel):
+    __slots__ = ("display_name", "id", "login")
+    __id_kind__ = "User"
+
+    def __init__(self, id: str, login: str = MISSING, name: str = MISSING, display_name: str = MISSING) -> None:
+        self.id = id
+        self.login = login if login is not MISSING else name
+        self.display_name = display_name
+
+        if self.login is MISSING and self.display_name is not MISSING:
+            self.login = self.display_name.lower()
+
+
+class User(PartialUser):
+    __slots__ = ()
+    __id_kind__ = "User"
