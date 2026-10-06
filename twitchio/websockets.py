@@ -135,8 +135,8 @@ class WebsocketManager:
         return self._sockets.get(session_id)
 
     async def _conduit_loss_handler(self) -> ...:
-        wait = MIN_KEEP_ALIVE // 5
-
+        wait = min(MIN_KEEP_ALIVE // 5, 5)
+        
         while True:
             await asyncio.sleep(wait)
             if not self._disconnected:
