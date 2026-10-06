@@ -35,7 +35,7 @@ from .base import BaseModel, model_transform
 __all__ = ("OAuthAuthFlowPayload", "OAuthClientCredentialsPayload", "OAuthRefreshPayload", "OAuthValidatePayload")
 
 
-@model_transform(has_id=False)
+@model_transform()
 class OAuthValidatePayload(BaseModel):
     __slots__ = ("client_id", "expires_in", "login", "scopes", "user_id")
 
@@ -47,7 +47,7 @@ class OAuthValidatePayload(BaseModel):
         self.expires_in = data["expires_in"]  # TODO: datetime?/delta?
 
 
-@model_transform(has_id=False)
+@model_transform()
 class OAuthRefreshPayload(BaseModel):
     __slots__ = ("access_token", "expires_in", "refresh_token", "scopes", "token_type")
 
@@ -59,7 +59,7 @@ class OAuthRefreshPayload(BaseModel):
         self.token_type = data["token_type"]
 
 
-@model_transform(has_id=False)
+@model_transform()
 class OAuthClientCredentialsPayload(BaseModel):
     __slots__ = ("access_token", "expires_in", "token_type")
 
@@ -69,7 +69,7 @@ class OAuthClientCredentialsPayload(BaseModel):
         self.token_type = data["token_type"]
 
 
-@model_transform(has_id=False)
+@model_transform()
 class OAuthAuthFlowPayload(BaseModel):
     __slots__ = ("access_token", "expires_in", "refresh_token", "scopes", "token_type")
 

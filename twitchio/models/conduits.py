@@ -26,7 +26,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, NamedTuple, Self, Unpack
 
 from ..exceptions import HTTPException
-from .base import BaseModel, model_transform
+from .base import BaseModel, IdentifiableBaseModel, model_transform
 
 
 if TYPE_CHECKING:
@@ -47,7 +47,7 @@ class SubscriptionError(NamedTuple):
     error: HTTPException
 
 
-@model_transform(has_id=False)
+@model_transform()
 class SubscriptionResults(BaseModel):
     __slots__ = ("errors", "successful")
 
@@ -57,15 +57,15 @@ class SubscriptionResults(BaseModel):
 
 
 @model_transform(frozen=False)
-class Conduit(BaseModel):
-    __slots__ = ("_id", "_shard_count")
+class Conduit(IdentifiableBaseModel):
+    __slots__ = ("_shard_count", "id")
 
     def __init__(self, **data: Unpack[ConduitData]) -> None:
-        self._id: str = data["id"]
+        self.id: str = data["id"]
         self._shard_count: int = data["shard_count"]
 
     def __repr__(self) -> str:
-        return f"Conduit(id={self._id}, shard_count={self._shard_count})"
+        return f"Conduit(id={self.id}, shard_count={self._shard_count})"
 
     def __int__(self) -> int:
         return self._shard_count
@@ -77,10 +77,6 @@ class Conduit(BaseModel):
         return self._shard_count > other._shard_count
 
     @property
-    def id(self) -> str:
-        return self._id
-
-    @property
     def shard_count(self) -> int:
         return self._shard_count
 
@@ -88,30 +84,30 @@ class Conduit(BaseModel):
         resp = await self._http._get_conduits()
 
         for conduit in resp["data"]:
-            if conduit["id"] == self._id:
+            if conduit["id"] == self.id:
                 self._shard_count = conduit["shard_count"]
 
         return self
 
     # TODO: Limit / status
     async def fetch_shards(self) -> list[ConduitShard]:
-        shards = [ConduitShard(**resp) async for resp in self._http.get_conduit_shards(conduit_id=self._id)]
+        shards = [ConduitShard(**resp) async for resp in self._http.get_conduit_shards(conduit_id=self.id)]
         return shards
 
     async def delete(self) -> None:
-        await self._http.delete_conduit(id=self._id)
+        await self._http.delete_conduit(id=self.id)
 
     async def scale(self, count: int, /) -> None:
         if not 1 <= count <= 20_000:
             raise ValueError("Provided shard count is not within limits. Conduit shard count must be between 1 and 20_000.")
 
-        await self._http.update_conduits(id=self._id, shard_count=count)
+        await self._http.update_conduits(id=self.id, shard_count=count)
         self._shard_count = count
 
     async def update_shards(self) -> ...: ...
 
     async def subscribe(self, subscriptions: Collection[Subscription[Any]]) -> SubscriptionResults:
-        transport: SubscriptionCreateTransport = {"method": "conduit", "conduit_id": self._id}
+        transport: SubscriptionCreateTransport = {"method": "conduit", "conduit_id": self.id}
 
         success: list[Subscription[Any]] = []
         errors: list[SubscriptionError] = []
@@ -137,7 +133,7 @@ class Conduit(BaseModel):
 
 
 @model_transform()
-class ConduitShard(BaseModel):
+class ConduitShard(IdentifiableBaseModel):
     __slots__ = ("id", "status", "transport")
 
     def __init__(self, **data: Unpack[ShardData]) -> None:
@@ -146,7 +142,7 @@ class ConduitShard(BaseModel):
         self.transport = data["transport"]  # TODO: ...
 
 
-@model_transform(has_id=False)
+@model_transform()
 class UpdatedShardPayload(BaseModel):
     __slots__ = ("errors", "shards")
 
