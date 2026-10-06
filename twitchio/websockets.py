@@ -136,7 +136,7 @@ class WebsocketManager:
 
     async def _conduit_loss_handler(self) -> ...:
         wait = min(MIN_KEEP_ALIVE // 5, 5)
-        
+
         while True:
             await asyncio.sleep(wait)
             if not self._disconnected:
@@ -316,6 +316,13 @@ class WebsocketManager:
 
     def _dispatch_notification(self, socket: Websocket, *, data: NotificationMessage, received_at: float) -> None:
         LOGGER.debug("Received 'notification' on %r: %s", socket, data)
+        model = self._client.dispatcher.find_model(data)
+
+        if model is None:
+            LOGGER.warning("No model found for notification on %r: %s", socket, data)
+            return
+
+        self._client.dispatcher.publish(model.__event_name__, payload=model)
 
     async def _dispatch_session_reconnect(self, socket: Websocket, *, data: ReconnectMessage, received_at: float) -> None:
         url = data["payload"]["session"]["reconnect_url"]

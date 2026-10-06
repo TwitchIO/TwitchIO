@@ -24,15 +24,17 @@ SOFTWARE.
 from __future__ import annotations
 
 import types
-from typing import TYPE_CHECKING, Any, ClassVar, Protocol, Self, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, Self, TypeVar, Unpack
 
-from ..utils import MISSING
+from ..enums import SubscriptionType
+from ..utils import DEFERRED, MISSING
 
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from ..http import HTTPClient
+    from ..types_.eventsub import NotificationMessage
 
 
 T = TypeVar("T", bound="BaseModel")
@@ -60,6 +62,15 @@ class Identifiable(Protocol):
 class BaseModel:
     __slots__ = ()
     __http: ClassVar[HTTPClient]
+    __event_registry__: ClassVar[dict[SubscriptionType, type]] = {}
+    __subscription_type__: ClassVar[SubscriptionType] = DEFERRED
+    __event_name__: ClassVar[str] = DEFERRED
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        if cls.__subscription_type__ is not DEFERRED:
+            BaseModel.__event_registry__[cls.__subscription_type__] = cls
 
     @property
     def _http(self) -> HTTPClient:
@@ -102,11 +113,22 @@ def model_transform(*, frozen: bool = True) -> Callable[[type[T]], type[T]]:
         if cls is IdentifiableBaseModel or issubclass(cls, IdentifiableBaseModel):
             ns["__eq__"] = _eq_id
             ns["__hash__"] = _hash_id
-            
-            if not ns.get("__id_kind__"):
+
+            if not getattr(cls, "__id_kind__", None):
                 ns["__id_kind__"] = cls.__name__
 
         bases = (cls, FrozenBaseModel) if frozen else (cls,)
         return types.new_class(cls.__name__, bases, exec_body=lambda body: body.update(ns))
 
     return wrapper
+
+
+# TODO: ...
+def create_event(**data: Unpack[NotificationMessage]) -> BaseModel:
+    sub_type = SubscriptionType(data["metadata"]["subscription_type"])
+    cls = BaseModel.__event_registry__.get(sub_type)
+
+    if cls is None:
+        raise ValueError(f"No event class registered for subscription type {sub_type}.")
+
+    return cls(data=data)

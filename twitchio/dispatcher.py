@@ -21,14 +21,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from __future__ import annotations
+
 import asyncio
 import inspect
 import logging
 from collections import defaultdict
 from collections.abc import Callable, Coroutine
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from twitchio.utils import MISSING
+from .models.base import BaseModel, create_event
+from .utils import MISSING
+
+
+if TYPE_CHECKING:
+    from .types_.eventsub import NotificationMessage
 
 
 LOGGER: logging.Logger = logging.getLogger("EventDispatcher")
@@ -43,6 +50,12 @@ class EventDispatcher:
         self._listeners: ListenerMap = defaultdict(set)
         self._waiters: ListenerMap = defaultdict(set)
         self.__tasks: set[asyncio.Task[None]] = set()
+
+    def find_model(self, data: NotificationMessage) -> BaseModel | None:
+        try:
+            return create_event(**data)
+        except ValueError:
+            return None
 
     def cleanup(self) -> None: ...
 
@@ -63,7 +76,7 @@ class EventDispatcher:
                 return listener
 
     def publish(self, name: str, /, *, safe: bool = False, payload: Any = MISSING) -> None:
-        name = f"event_{name.lower()}"
+        name = f"event_{name.removeprefix('event_').lower()}"
         name = f"safe_{name}" if safe else name
 
         listeners = self._listeners.get(name)
