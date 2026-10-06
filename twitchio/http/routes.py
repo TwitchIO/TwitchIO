@@ -137,8 +137,8 @@ class Route:
         self._retries: int = REQUEST_RETRIES
         self.cost = cost
         self.token: TokenContainer | None = None
-        self.max_pages: int | None = None
-        self.max_results: int | None = None
+        self.max_pages: int | None = max_pages
+        self.max_results: int | None = max_results
 
     def __str__(self) -> str:
         return str(self._url)
