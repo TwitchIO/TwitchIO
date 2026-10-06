@@ -46,7 +46,7 @@ class TwitchWSCloseCode(enum.IntEnum):
     INVALID_RECONNECT     = 4007  # The reconnect URL is invalid.
 
 
-class TransportMethod(enum.Enum):
+class TransportMethod(enum.StrEnum):
     """An enum of EventSub transports.
 
     Attributes
@@ -61,7 +61,8 @@ class TransportMethod(enum.Enum):
     CONDUIT   = "conduit"
 
 
-class ShardStatus(enum.Enum):
+# TODO: Add missing statuses...
+class ShardStatus(enum.StrEnum):
     ENABLED = "enabled"
     WEBHOOK_VERIFICATION_PENDING   = "webhook_callback_verification_pending"
     WEBHOOK_VERIFICATION_FAILED    = "webhook_callback_verification_failed"
@@ -75,7 +76,7 @@ class ShardStatus(enum.Enum):
     WEBSOCKET_FAILED_RECONNECT     = "websocket_failed_to_reconnect"
 
 
-class MessageType(enum.Enum):
+class MessageType(enum.StrEnum):
     SESSION_WELCOME   = "session_welcome"
     SESSION_KEEPALIVE = "session_keepalive"
     NOTIFICATION      = "notification"
@@ -254,7 +255,7 @@ class SubscriptionType(enum.StrEnum):
     UserWhisperMessage                               = "user.whisper.message"
 
 
-class RevocationReason(enum.Enum):
+class RevocationReason(enum.StrEnum):
     USER_REMOVED                   = "user_removed"
     AUTHORIZATION_REVOKED          = "authorization_revoked"
     NOTIFICATION_FAILURES_EXCEEDED = "notification_failures_exceeded"
