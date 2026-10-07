@@ -42,6 +42,7 @@ __all__ = (
     "ChannelChatUserMessageHoldCT",
     "ChannelChatUserMessageUpdate",
     "ChannelCheerCT",
+    "ChannelCustomPowerUpRedemptionAddCT",
     "ChannelFollowCT",
     "ChannelGuestStarGuestUpdate",
     "ChannelGuestStarSessionBeginCT",
@@ -81,6 +82,10 @@ __all__ = (
     "ChannelVIPRemoveCT",
     "ChannelWarningAcknowledgeCT",
     "ChannelWarningSendCT",
+    "CharityCampaignProgressCT",
+    "CharityCampaignStartCT",
+    "CharityCampaignStopCT",
+    "CharityDonationCT",
     "ConduitShardDisabledCT",
     "DropEntitlementGrantCT",
     "ExtensionBitsTransactionCreateCT",
@@ -88,6 +93,10 @@ __all__ = (
     "HypeTrainBeginCT",
     "HypeTrainEndCT",
     "HypeTrainProgressCT",
+    "ShieldModeBeginCT",
+    "ShieldModeEndCT",
+    "ShoutoutCreateCT",
+    "ShoutoutReceiveCT",
     "StreamOfflineCT",
     "StreamOnlineCT",
     "UserAuthorizationGrantCT",
@@ -106,15 +115,6 @@ class _BroadcasterCT(TypedDict):
     """
 
     broadcaster_user_id: Required[str]
-
-
-class _BroadcasterIdCT(TypedDict):
-    """
-    broadcaster_id: str
-        The ID of the broadcaster/channel for this event.
-    """
-
-    broadcaster_id: Required[str]
 
 
 class _ModeratorCT(TypedDict):
@@ -136,10 +136,20 @@ class _UserCT(TypedDict):
 
 
 class _RewardCT(TypedDict):
+    """
+    reward_id: str
+        Optional. The ID of a specific reward to receive events for. If omitted, events for all rewards are sent.
+    """
+
     reward_id: NotRequired[str]
 
 
 class _ClientCT(TypedDict):
+    """
+    client_id: str
+        Your application's client ID. Must match the client ID in the access token.
+    """
+
     client_id: Required[str]
 
 
@@ -161,7 +171,6 @@ class _BroadcasterRewardCT(_BroadcasterCT, _RewardCT):
 
 class _ConditionCT(TypedDict, total=False):
     broadcaster_user_id: str
-    broadcaster_id: str
     moderator_user_id: str
     user_id: str
     reward_id: str
@@ -215,6 +224,7 @@ type AnyCondition = (
     | ChannelPointsCustomRewardRemoveCT
     | ChannelPointsCustomRewardRedemptionAddCT
     | ChannelPointsCustomRewardRedemptionUpdateCT
+    | ChannelCustomPowerUpRedemptionAddCT
     | ChannelPollBeginCT
     | ChannelPollProgressCT
     | ChannelPollEndCT
@@ -231,6 +241,10 @@ type AnyCondition = (
     | ChannelVIPRemoveCT
     | ChannelWarningAcknowledgeCT
     | ChannelWarningSendCT
+    | CharityDonationCT
+    | CharityCampaignStartCT
+    | CharityCampaignProgressCT
+    | CharityCampaignStopCT
     | ConduitShardDisabledCT
     | DropEntitlementGrantCT
     | ExtensionBitsTransactionCreateCT
@@ -238,6 +252,10 @@ type AnyCondition = (
     | HypeTrainBeginCT
     | HypeTrainProgressCT
     | HypeTrainEndCT
+    | ShieldModeBeginCT
+    | ShieldModeEndCT
+    | ShoutoutCreateCT
+    | ShoutoutReceiveCT
     | StreamOnlineCT
     | StreamOfflineCT
     | UserAuthorizationGrantCT
@@ -259,7 +277,7 @@ class AutomodSettingsUpdateCT(_BroadcasterModeratorCT): ...
 class AutomodTermsUpdateCT(_BroadcasterModeratorCT): ...
 
 
-class ChannelAdBreakBeginCT(_BroadcasterIdCT): ...
+class ChannelAdBreakBeginCT(_BroadcasterCT): ...
 
 
 class ChannelBanCT(_BroadcasterCT): ...
@@ -368,6 +386,9 @@ class ChannelPointsCustomRewardRedemptionAddCT(_BroadcasterRewardCT): ...
 class ChannelPointsCustomRewardRedemptionUpdateCT(_BroadcasterRewardCT): ...
 
 
+class ChannelCustomPowerUpRedemptionAddCT(_BroadcasterRewardCT): ...
+
+
 class ChannelPollBeginCT(_BroadcasterCT): ...
 
 
@@ -416,6 +437,18 @@ class ChannelWarningAcknowledgeCT(_BroadcasterModeratorCT): ...
 class ChannelWarningSendCT(_BroadcasterModeratorCT): ...
 
 
+class CharityDonationCT(_BroadcasterCT): ...
+
+
+class CharityCampaignStartCT(_BroadcasterCT): ...
+
+
+class CharityCampaignProgressCT(_BroadcasterCT): ...
+
+
+class CharityCampaignStopCT(_BroadcasterCT): ...
+
+
 class ConduitShardDisabledCT(_ClientCT):
     conduit_id: NotRequired[str]
 
@@ -440,6 +473,18 @@ class HypeTrainProgressCT(_BroadcasterCT): ...
 
 
 class HypeTrainEndCT(_BroadcasterCT): ...
+
+
+class ShieldModeBeginCT(_BroadcasterModeratorCT): ...
+
+
+class ShieldModeEndCT(_BroadcasterModeratorCT): ...
+
+
+class ShoutoutCreateCT(_BroadcasterModeratorCT): ...
+
+
+class ShoutoutReceiveCT(_BroadcasterModeratorCT): ...
 
 
 class StreamOnlineCT(_BroadcasterCT): ...
