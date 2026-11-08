@@ -214,11 +214,8 @@ class Websocket:
                 await self.close()
 
                 raise WebsocketConnectionException(
-                    'Failed to connect to %s "%s" after %s retries. '
-                    "Please attempt to reconnect or re-subscribe this eventsub connection.",
-                    self._log_name,
-                    self,
-                    self._reconnect_attempts,
+                    f'Failed to connect to {self._log_name} "{self}" after {self._reconnect_attempts} retries. '
+                    "Please attempt to reconnect or re-subscribe this eventsub connection."
                 )
 
             if retries is not None:
@@ -244,10 +241,8 @@ class Websocket:
             await self.close()
 
             raise WebsocketConnectionException(
-                '%s "%s" did not receive a welcome message from Twitch within the allowed timeframe. '
-                "Please attempt to reconnect or re-subscribe this eventsub connection.",
-                self._log_name,
-                self,
+                f'{self._log_name} "{self}" did not receive a welcome message from Twitch within the allowed timeframe. '
+                "Please attempt to reconnect or re-subscribe this eventsub connection."
             )
 
         self._keep_alive_task = asyncio.create_task(self._process_keepalive())
@@ -270,8 +265,8 @@ class Websocket:
 
             try:
                 resp: SubscriptionResponse = await self._http.create_eventsub_subscription(**sub)
-            except HTTPException as e:
-                if e.status == 409:
+            except Exception as e:
+                if isinstance(e, HTTPException) and e.status == 409:
                     # This should never happen here...
                     # But we may as well handle it in-case of edge cases instead of being noisy...
 
@@ -280,6 +275,7 @@ class Websocket:
                     continue
 
                 logger.error("Unable to resubscribe to subscription '%s' on websocket '%s': %s", identifier, self, e)
+                self._subscriptions[identifier] = sub
                 continue
 
             for new in resp["data"]:
@@ -306,6 +302,9 @@ class Websocket:
 
         try:
             await socket.connect(url=url, reconnect=False, fail_once=True)
+        except asyncio.CancelledError:
+            await socket.close()
+            raise
         except Exception:
             # Conduit websockets (Shards) need to be handled on Client
             if self._shard_id is not None:
@@ -314,7 +313,10 @@ class Websocket:
             return await self.connect(reconnect=True)
 
         if self._client:
-            self._client._websockets[self._token_for][socket.session_id] = socket  # type: ignore
+            if self._shard_id is not None:
+                self._client._conduit_info._sockets[self._shard_id] = socket  # type: ignore
+            else:
+                self._client._websockets[self._token_for][socket.session_id] = socket  # type: ignore
 
         await self.close()
 
@@ -364,7 +366,7 @@ class Websocket:
                         self._log_name,
                         self,
                     )
-                    return await self.close()
+                    return await self.close(reassociate=False)
 
                 elif self._socket.close_code == 4003:
                     return await self.close()
@@ -396,7 +398,9 @@ class Websocket:
                 logger.debug('Received "session_reconnect" message from %s: "%s"', self._log_name, self)
                 reconnect_data: ReconnectMessage = cast("ReconnectMessage", data)
 
-                await self._process_reconnect(reconnect_data)
+                task = asyncio.create_task(self._process_reconnect(reconnect_data))
+                self._connection_tasks.add(task)
+                task.add_done_callback(self._connection_tasks.discard)
 
             elif message_type == "session_keepalive":
                 logger.debug('Received "session_keepalive" message from %s: "%s"', self._log_name, self)
@@ -442,7 +446,9 @@ class Websocket:
 
         elif self._session_id:
             self._cleanup(closed=False)
-            self._client._websockets[self._token_for] = {self.session_id: self}  # type: ignore
+
+            if self._client:
+                self._client._websockets[self._token_for][new_id] = self  # type: ignore
 
         self._session_id = new_id
         self._ready.set()
@@ -495,10 +501,10 @@ class Websocket:
         if self._shard_id is not None:
             return
 
-        # If not conduit we will always have this...
-        assert self._token_for
-
         if self._client:
+            # If not conduit we will always have this...
+            assert self._token_for
+
             sockets = self._client._websockets.get(self._token_for, {})
             sockets.pop(self.session_id or "", None)
 
@@ -511,12 +517,17 @@ class Websocket:
         if cleanup:
             self._cleanup()
 
-        if self._client:
+            current = asyncio.current_task()
+            for task in self._connection_tasks:
+                if task is not current:
+                    task.cancel()
+
+        if self._client and cleanup:
             reassociate = reassociate and self._shard_id is not None
             payload: WebsocketClosed = WebsocketClosed(socket=self, reassociate=reassociate)
             self._client.dispatch("websocket_closed", payload=payload)
 
-        if self._keep_alive_task:
+        if self._keep_alive_task and self._keep_alive_task is not asyncio.current_task():
             try:
                 self._keep_alive_task.cancel()
             except Exception:

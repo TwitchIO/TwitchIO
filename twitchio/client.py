@@ -2539,7 +2539,7 @@ class Client:
             await websocket.connect(fail_once=True)
 
             # session_id is guaranteed at this point.
-            self._websockets[token_for] = {websocket.session_id: websocket}  # type: ignore
+            self._websockets[token_for][websocket.session_id] = websocket  # type: ignore
 
         else:
             sorted_: list[Websocket] = sorted(sockets.values(), key=lambda s: s.subscription_count)
@@ -3651,7 +3651,7 @@ class AutoClient(Client):
             self._conduit_info._sockets.pop(payload.socket._shard_id, None)
             return
 
-        if payload.socket._shard_id not in self._conduit_info._sockets:
+        if self._conduit_info._sockets.get(payload.socket._shard_id) is not payload.socket:
             return
 
         try:
