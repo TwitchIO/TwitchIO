@@ -226,3 +226,7 @@ test*.py
 # So we don't accidentally commit tokens while testing...
 .tio.tokens.json
 TOKENS.py
+
+docs
+docs/
+/docs

@@ -28,8 +28,8 @@ sys.path.append(os.path.abspath("_extensions"))
 
 on_rtd = os.environ.get("READTHEDOCS") == "True"
 project = "TwitchIO"
-copyright = "2017-Current, TwitchIO, PythonistaGuild"
-author = "TwitchIO, PythonistaGuild"
+copyright = "2017-Current, TwitchIO, Evie. P., Chillymosh"
+author = "TwitchIO"
 
 # The full version, including alpha/beta/rc tags
 release = ""
@@ -49,11 +49,9 @@ extensions = [
     "sphinx.ext.intersphinx",
     "details",
     "attributetable",
-    "hoverxref.extension",
     "sphinxcontrib_trio",
-    "sphinx_wagtail_theme",
-    "sig_prefix",
     "exc_hierarchy",
+    "twitchio_theme",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -69,47 +67,29 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_wagtail_theme"
-html_last_updated_fmt = "%b %d, %Y"
-# html_logo = "logo.png"
-
-html_theme_options = dict(
-    project_name="TwitchIO - Documentation",
-    github_url="https://github.com/TwitchIO/TwitchIO/tree/main/docs/",
-    logo="logo.png",
-    logo_alt="TwitchIO",
-    logo_height=120,
-    logo_url="/",
-    logo_width=120,
-    footer_links=",".join(
-        [
-            "GitHub|https://github.com/TwitchIO/TwitchIO",
-            "Discord|https://discord.gg/YP548eEK3a",
-            "Documentation|https://twitchio.dev",
-        ]
-    ),
-    header_links=",".join(
-        ["Examples|https://github.com/TwitchIO/TwitchIO/tree/main/examples",
-         "Event Reference|https://twitchio.dev/en/latest/references/events/index.html"
-        ]
-))
-
-copyright = "2017 - Present, TwitchIO, PythonistaGuild"
-html_show_copyright = True
-html_show_sphinx = False
-
-html_last_updated_fmt = "%b %d, %Y - %H:%M:%S"
-
+html_theme = "twitchio_theme"
+html_title = "TwitchIO"
+html_theme_options = {
+    "nav_links": [
+        ("Examples", "https://github.com/TwitchIO/TwitchIO/tree/main/examples"),
+        ("Events", "https://twitchio.dev/en/latest/references/events/index.html"),
+    ],
+    "github_url": "https://github.com/TwitchIO/TwitchIO",
+    "discord_url": "https://discord.gg/YP548eEK3a",
+    "source_edit_link": "https://github.com/TwitchIO/TwitchIO/blob/main/docs/{filename}",
+    "footer_links": [
+        ("GitHub", "https://github.com/TwitchIO/TwitchIO"),
+        ("Discord", "https://discord.gg/YP548eEK3a"),
+    ],
+}
+html_css_files = []
+html_js_files = []
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.styles" will overwrite the builtin "default.styles".
 # These folders are copied to the documentation's HTML output
 html_static_path = ["_static"]
 
-# These paths are either relative to html_static_path
-# or fully qualified paths (eg. https://...)
-html_css_files = ["custom.css", "codeblocks.css"]
-html_js_files = ["custom.js"]
 
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
@@ -142,34 +122,6 @@ extlinks = {
     "tioissue": ("https://github.com/TwitchIO/Twitchio/issues/%s", "GH-%s"),
     "es-docs": ("https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#%s", "Twitch Eventsub %s"),
 }
-
-
-# Hoverxref Settings...
-hoverxref_auto_ref = True
-hoverxref_intersphinx = ["py"]
-
-hoverxref_role_types = {
-    "hoverxref": "modal",
-    "ref": "modal",
-    "confval": "tooltip",
-    "mod": "tooltip",
-    "class": "tooltip",
-    "attr": "tooltip",
-    "func": "tooltip",
-    "meth": "tooltip",
-    "exc": "tooltip",
-}
-
-hoverxref_roles = list(hoverxref_role_types.keys())
-hoverxref_domains = ["py"]
-hoverxref_default_type = "tooltip"
-hoverxref_tooltip_theme = ["tooltipster-punk", "tooltipster-shadow", "tooltipster-shadow-custom"]
-
-
-pygments_style = "sphinx"
-pygments_dark_style = "monokai"
-
-
 html_experimental_html5_writer = True
 
 

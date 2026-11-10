@@ -120,14 +120,10 @@ dev = [
     "pyright>=1.1.414",
 ]
 
+[project.optional-dependencies]
 docs = [
-    "sphinx",
-    "sphinx-wagtail-theme",
-    "docutils<0.18",
-    "sphinxcontrib-napoleon",
-    "sphinxcontrib-asyncio",
-    "sphinxcontrib-websupport",
-    "Pygments",
+    "sphinx>=7.3",
+    "sphinx-autobuild",
     "sphinx-hoverxref",
-    "sphinxcontrib_trio",
+    "sphinxcontrib-trio",
 ]
