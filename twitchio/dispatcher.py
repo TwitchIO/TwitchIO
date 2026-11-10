@@ -48,6 +48,7 @@ type ListenerMap = dict[str, set[CB]]
 class EventDispatcher:
     def __init__(self) -> None:
         self._listeners: ListenerMap = defaultdict(set)
+        self._base_listeners: ListenerMap = defaultdict(set)
         self._waiters: ListenerMap = defaultdict(set)
         self.__tasks: set[asyncio.Task[None]] = set()
 

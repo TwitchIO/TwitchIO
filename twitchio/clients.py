@@ -92,7 +92,8 @@ class Client:
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.close()
 
-    async def _setup(self) -> None: ...
+    async def _setup(self) -> None:
+        ...
 
     async def setup(self) -> None: ...
 
@@ -205,6 +206,7 @@ class ManagedClient(Client):
         self._conduit: Conduit = DEFERRED
 
     async def _setup(self) -> None:
+        await super()._setup()
         await self._setup_flow()
 
     async def _setup_flow(self) -> None:
