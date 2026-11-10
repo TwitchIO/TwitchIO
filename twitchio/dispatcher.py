@@ -60,6 +60,16 @@ class EventDispatcher:
 
     def cleanup(self) -> None: ...
 
+    def _base_subscribe(self, *, name: str, listener: CB) -> None:
+        name = name.lower()
+
+        if not name.startswith("event_"):
+            raise ValueError("Subscribed listeners names must start with 'event_'.")
+        if not inspect.iscoroutinefunction(listener):
+            raise TypeError("Subscribed listeners must be coroutine functions.")
+
+        self._base_listeners[name].add(listener)
+
     def subscribe(self, *, name: str, listener: CB) -> None:
         name = name.lower()
 
@@ -80,7 +90,7 @@ class EventDispatcher:
         name = f"event_{name.removeprefix('event_').lower()}"
         name = f"safe_{name}" if safe else name
 
-        listeners = self._listeners.get(name)
+        listeners = self._listeners.get(name, set()) | self._base_listeners.get(name, set())
         if not listeners:
             return
 

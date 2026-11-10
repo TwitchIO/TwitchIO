@@ -37,6 +37,7 @@ from .websockets import WebsocketManager
 
 
 if TYPE_CHECKING:
+    from .models.message import Message
     from collections.abc import Callable, Sequence
 
     from twitchio.eventsub.conditions import AnyCondition
@@ -92,7 +93,10 @@ class Client:
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.close()
 
-    async def _setup(self) -> None: ...
+    async def _event_message(self, message: Message) -> None: ...
+
+    async def _setup(self) -> None:
+        self._events._base_subscribe(name="event_message", listener=self._event_message)
 
     async def setup(self) -> None: ...
 
