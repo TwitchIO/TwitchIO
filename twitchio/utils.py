@@ -37,8 +37,10 @@ try:
     import orjson  # type: ignore
 
     JSON_LOADS: Any = orjson.loads  # type: ignore
+    JSON_DUMPS: Any = orjson.dumps  # type: ignore
 except ImportError:
     JSON_LOADS: Any = json.loads  # type: ignore
+    JSON_DUMPS: Any = json.dumps  # type: ignore
 
 
 PY_314: bool = sys.version_info >= (3, 14)

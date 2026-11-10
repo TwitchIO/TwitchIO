@@ -72,13 +72,13 @@ logging.getLogger("aiofastnet").setLevel(logging.WARNING)
 
 WSS_URL: str = "wss://eventsub.wss.twitch.tv/ws"
 
-#fmt: off
+# fmt: off
 MIN_KEEP_ALIVE  : int = 10
 MAX_KEEP_ALIVE  : int = 600
 KEEP_ALIVE_GRACE: int = 2
 CLEANUP_TIMEOUT : int = 5
 SOFT_RETRIES    : int = 3
-#fmt: on
+# fmt: on
 
 FAIL_CODES: tuple[TwitchWSCloseCode | WSCloseCode, ...] = (
     WSCloseCode.PROTOCOL_ERROR,

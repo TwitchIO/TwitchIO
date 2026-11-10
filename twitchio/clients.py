@@ -92,8 +92,7 @@ class Client:
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.close()
 
-    async def _setup(self) -> None:
-        ...
+    async def _setup(self) -> None: ...
 
     async def setup(self) -> None: ...
 
