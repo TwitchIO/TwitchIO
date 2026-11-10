@@ -41,6 +41,7 @@ from .routes import RequestManager, Route
 
 
 if TYPE_CHECKING:
+    from ..tokens import TokenManagerProtocol
     from collections.abc import AsyncIterator
 
     from twitchio.types_.eventsub import *
@@ -69,6 +70,7 @@ class HTTPClient:
         app_token: str = MISSING,
         is_dcf: bool = False,
         prefers_user: bool = False,
+        token_manager: TokenManagerProtocol = MISSING,
     ) -> None:
         self.__session = session
         self.__connector = connector
@@ -76,7 +78,7 @@ class HTTPClient:
         self._client_id = client_id
         self._client_secret = client_secret
         self._app_token = app_token
-        self._manager = RequestManager(self, is_dcf=is_dcf, prefers_user=prefers_user)
+        self._manager = RequestManager(self, is_dcf=is_dcf, prefers_user=prefers_user, token_manager=token_manager)
         self._has_setup: bool = False
 
         pyver = f"{sys.version_info[0]}.{sys.version_info[1]}"

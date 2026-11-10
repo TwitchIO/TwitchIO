@@ -37,6 +37,7 @@ from ..utils import MISSING
 
 
 if TYPE_CHECKING:
+    from ..tokens import TokenManagerProtocol
     from collections.abc import Mapping
 
     from aiohttp import ClientResponse
@@ -330,8 +331,16 @@ class TokenContainer:
 
 
 class RequestManager:
-    def __init__(self, client: HTTPClient, /, prefers_user: bool = False, is_dcf: bool = False) -> None:
+    def __init__(
+        self,
+        client: HTTPClient,
+        /,
+        prefers_user: bool = False,
+        is_dcf: bool = False,
+        token_manager: TokenManagerProtocol = MISSING,
+    ) -> None:
         self._client = client
+        self._token_manager = token_manager
         identity = TokenIdentity.dcf if is_dcf else TokenIdentity.app
         self._app_token = TokenContainer(bucket=Ratelimiter(burst=760), token=self._client._app_token, identity=identity)
         self._prefers_user = prefers_user
@@ -347,11 +356,27 @@ class RequestManager:
         if app.token is not MISSING or self._app_token.identity is TokenIdentity.dcf:
             return
 
+        if self._token_manager is not MISSING:
+            await self._token_manager.load()
+
+            self._tokens = {
+                d["user_id"]: TokenContainer(
+                    bucket=Ratelimiter(burst=760),
+                    token=d["access_token"],
+                    refresh=d["refresh_token"],
+                    expires=d.get("expires_in"),
+                )
+                for d in self._token_manager.tokens.values()
+            }
+
         await self.fetch_app_token()
         self._has_setup = True
 
     async def close(self) -> None:
         LOGGER.debug("Gracefully closing %s.", type(self).__name__)
+
+        if self._token_manager is not MISSING:
+            await self._token_manager.save()
 
     async def fetch_app_token(self) -> None:
         if not self._client._client_secret or self._app_token.identity is TokenIdentity.dcf:
@@ -431,6 +456,10 @@ class RequestManager:
 
         route.token.update(resp)
         self._tokens[route.token.user_id] = route.token  # type: ignore
+
+        if self._token_manager is not MISSING:
+            await self._token_manager.add(data=resp, user_id=route.token.user_id)  # type: ignore
+
         return True
 
     def update_route(self, route: Route, /, extras: dict[str, Any]) -> TokenContainer | None:

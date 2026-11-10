@@ -34,6 +34,7 @@ from .exceptions import *
 from .http import HTTPClient
 from .utils import DEFERRED, MISSING
 from .websockets import WebsocketManager
+from .tokens import BaseTokenManager
 
 
 if TYPE_CHECKING:
@@ -61,6 +62,7 @@ class Client:
 
         session = options.get("session", MISSING)
         connector = options.get("connector", MISSING)
+        token_manager = options.get("token_manager", BaseTokenManager()) or MISSING
 
         self._http = HTTPClient(
             client_id=self._client_id,
@@ -68,6 +70,7 @@ class Client:
             session=session,
             connector=connector,
             is_dcf=self._dcf,
+            token_manager=token_manager,
         )
         self._events = EventDispatcher()
         self._sockets = WebsocketManager(self)

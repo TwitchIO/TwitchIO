@@ -21,9 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from typing import Required, TypedDict
+from typing import Required, TypedDict, TYPE_CHECKING
 
 from aiohttp import ClientSession, TCPConnector
+
+
+if TYPE_CHECKING:
+    from ..tokens import TokenManagerProtocol
 
 
 # TODO: Discuss names of options...
@@ -36,3 +40,4 @@ class ClientOptionsT(TypedDict, total=False):
     session: ClientSession
     connector: TCPConnector
     dcf: bool
+    token_manager: TokenManagerProtocol | None

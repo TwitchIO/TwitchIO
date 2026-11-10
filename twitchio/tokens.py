@@ -24,7 +24,7 @@ SOFTWARE.
 import asyncio
 import copy
 import pathlib
-from typing import Protocol, TypedDict, NotRequired
+from typing import Protocol, TypedDict, NotRequired, Any
 from collections.abc import MutableMapping
 
 from .utils import JSON_DUMPS, JSON_LOADS
@@ -32,7 +32,7 @@ from .utils import JSON_DUMPS, JSON_LOADS
 
 class TokenDictT(TypedDict):
     user_id: str
-    token: str
+    access_token: str
     refresh_token: str
     expires_in: NotRequired[int]
 
@@ -44,7 +44,7 @@ class TokenManagerProtocol(Protocol):
 
     async def load(self) -> None: ...
 
-    async def add(self, data: TokenDictT) -> None: ...
+    async def add(self, data: Any, *, user_id: str) -> None: ...
 
     async def remove(self, user: str) -> None: ...
 
@@ -81,8 +81,14 @@ class BaseTokenManager(TokenManagerProtocol):
             with fp.open("r", encoding="utf-8") as f:
                 self.tokens.update(JSON_LOADS(f.read()))
 
-    async def add(self, data: TokenDictT) -> None:
-        self.tokens[data["user_id"]] = data
+    async def add(self, data: Any, *, user_id: str) -> None:
+        new: TokenDictT = {
+            "user_id": user_id,
+            "access_token": data["access_token"],
+            "refresh_token": data["refresh_token"],
+            "expires_in": data.get("expires_in"),
+        }
+        self.tokens[user_id] = new
 
     async def remove(self, user: str) -> None:
         self.tokens.pop(user, None)
