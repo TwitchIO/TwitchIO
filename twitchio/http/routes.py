@@ -37,13 +37,13 @@ from ..utils import MISSING
 
 
 if TYPE_CHECKING:
-    from ..tokens import TokenManagerProtocol
     from collections.abc import Mapping
 
     from aiohttp import ClientResponse
 
     from twitchio.types_.responses import OAuthRefreshResponseT
 
+    from ..tokens import TokenManagerProtocol
     from ..types_.http import APIRequestKwargs, HTTPMethodT, ParamMappingInputT, ParamMappingT
     from .clients import HTTPClient
 

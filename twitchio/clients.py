@@ -27,23 +27,24 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any, Self, Unpack
 
+from .caches import LookupStack
 from .dispatcher import EventDispatcher
 from .enums import SubscriptionType, TransportMethod
 from .eventsub import Subscription
 from .exceptions import *
 from .http import HTTPClient
+from .tokens import BaseTokenManager
 from .utils import DEFERRED, MISSING
 from .websockets import WebsocketManager
-from .tokens import BaseTokenManager
 
 
 if TYPE_CHECKING:
-    from .models.message import Message
     from collections.abc import Callable, Sequence
 
     from twitchio.eventsub.conditions import AnyCondition
     from twitchio.models.conduits import Conduit
 
+    from .models.message import Message
     from .types_.clients import ClientOptionsT
     from .types_.eventsub import SubscriptionCreateRequest, SubscriptionResponseT
 
@@ -63,6 +64,15 @@ class Client:
         session = options.get("session", MISSING)
         connector = options.get("connector", MISSING)
         token_manager = options.get("token_manager", BaseTokenManager()) or MISSING
+
+        message_cache = options.get("message_cache_size")
+        if message_cache is not None:
+            if message_cache <= 0:
+                raise ValueError("'message_cache_size' parameter must be greater than 0.")
+
+            self._message_cache: LookupStack[Message] = LookupStack(maxlen=message_cache)
+        else:
+            self._message_cache = MISSING
 
         self._http = HTTPClient(
             client_id=self._client_id,
@@ -96,7 +106,9 @@ class Client:
     async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         await self.close()
 
-    async def _event_message(self, message: Message) -> None: ...
+    async def _event_message(self, message: Message) -> None:
+        if self._message_cache is not MISSING:
+            self._message_cache.push(message.id, message)
 
     async def _setup(self) -> None:
         self._events._base_subscribe(name="event_message", listener=self._event_message)

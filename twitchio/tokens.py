@@ -24,8 +24,8 @@ SOFTWARE.
 import asyncio
 import copy
 import pathlib
-from typing import Protocol, TypedDict, NotRequired, Any
 from collections.abc import MutableMapping
+from typing import Any, NotRequired, Protocol, TypedDict
 
 from .utils import JSON_DUMPS, JSON_LOADS
 

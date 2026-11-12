@@ -41,12 +41,13 @@ from .routes import RequestManager, Route
 
 
 if TYPE_CHECKING:
-    from ..tokens import TokenManagerProtocol
     from collections.abc import AsyncIterator
 
     from twitchio.types_.eventsub import *
     from twitchio.types_.requests import *
     from twitchio.types_.responses import *
+
+    from ..tokens import TokenManagerProtocol
 
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
