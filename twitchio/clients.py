@@ -27,7 +27,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any, Self, Unpack
 
-from .caches import LookupStack
+from .caches import BoundedCache
 from .dispatcher import EventDispatcher
 from .enums import SubscriptionType, TransportMethod
 from .eventsub import Subscription
@@ -70,7 +70,7 @@ class Client:
             if message_cache <= 0:
                 raise ValueError("'message_cache_size' parameter must be greater than 0.")
 
-            self._message_cache: LookupStack[Message] = LookupStack(maxlen=message_cache)
+            self._message_cache: BoundedCache[str, Message] = BoundedCache(maxlen=message_cache)
         else:
             self._message_cache = MISSING
 

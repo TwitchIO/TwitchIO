@@ -22,43 +22,63 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
-from typing import Any, overload
+from collections import OrderedDict
+from collections.abc import Hashable, Iterator
+from typing import overload
 
 
-class LookupStack[T]:
-    def __init__(self, maxlen: int = 500) -> None:
-        if maxlen <= 0:
-            raise ValueError("maxlen must be greater than 0.")
+class BoundedCache[K: Hashable, V]:
+    __slots__ = ("_data", "_lru", "_maxlen")
 
-        self._stack: dict[Any, T] = {}
+    def __init__(self, maxlen: int = 500, *, lru: bool = False) -> None:
+        if maxlen < 1:
+            raise ValueError("maxlen must be >= 1.")
+
+        self._data: OrderedDict[K, V] = OrderedDict()
         self._maxlen = maxlen
+        self._lru = lru
 
-    def __getitem__(self, key: Any) -> T:
-        return self._stack[key]
+    def __getitem__(self, key: K) -> V:
+        value = self._data[key]
 
-    def __contains__(self, key: Any) -> bool:
-        return key in self._stack
+        if self._lru:
+            self._data.move_to_end(key)
+
+        return value
+
+    def __contains__(self, key: object) -> bool:
+        return key in self._data
 
     def __len__(self) -> int:
-        return len(self._stack)
+        return len(self._data)
+
+    def __iter__(self) -> Iterator[K]:
+        return iter(self._data)
 
     def __repr__(self) -> str:
-        return f"LookupStack({self._stack})"
+        return f"{type(self).__name__}(len={len(self)}, maxlen={self._maxlen})"
 
     @overload
-    def get(self, key: Any) -> T | None: ...
+    def get(self, key: K) -> V | None: ...
 
     @overload
-    def get[DT](self, key: Any, default: DT) -> T | DT: ...
+    def get[D](self, key: K, default: D) -> V | D: ...
 
-    def get[DT](self, key: Any, default: DT = None) -> T | DT | None:
-        return self._stack.get(key, default)
+    def get[D](self, key: K, default: D | None = None) -> V | D | None:
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
-    def push(self, key: Any, item: T) -> None:
-        if key in self._stack:
-            del self._stack[key]
+    def push(self, key: K, item: V) -> None:
+        self._data[key] = item
+        self._data.move_to_end(key)
 
-        if len(self._stack) >= self._maxlen:
-            self._stack.pop(next(iter(self._stack)), None)
+        if len(self._data) > self._maxlen:
+            self._data.popitem(last=False)
 
-        self._stack[key] = item
+    def pop(self, key: K) -> V:
+        return self._data.pop(key)
+
+    def clear(self) -> None:
+        self._data.clear()
